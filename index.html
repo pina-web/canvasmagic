@@ -1,0 +1,2880 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CANVAS MAGIC — 포스터 · 카드뉴스 편집기</title>
+
+<!-- ===== 한글 폰트 (구글 폰트 / OFL 라이선스, 상업적 사용 가능) ===== -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&family=Noto+Serif+KR:wght@400;700&family=Nanum+Gothic:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Nanum+Pen+Script&family=Nanum+Brush+Script&family=Black+Han+Sans&family=Do+Hyeon&family=Jua&family=Gaegu&family=Gamja+Flower&family=Hi+Melody&family=Single+Day&family=Song+Myung&family=Stylish&family=Sunflower:wght@300;500;700&family=Cute+Font&family=Dokdo&family=East+Sea+Dokdo&family=Yeon+Sung&display=swap" rel="stylesheet">
+
+<!-- ===== 영문 폰트 (구글 폰트 / OFL · Apache, 상업적 사용 가능) ===== -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Playfair+Display:wght@400;700&family=Oswald:wght@400;700&family=Lobster&family=Pacifico&family=Bebas+Neue&family=Roboto+Slab:wght@400;700&family=Archivo+Black&family=Anton&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --bg:#1e1f24; --panel:#26272e; --panel2:#2d2e36; --line:#3a3b44;
+  --txt:#e8e9ee; --txt-dim:#9fa1ad; --accent:#4c8dff; --accent2:#6fa8ff;
+  --danger:#ff5d6c; --ok:#34d399; --radius:8px;
+  --topbar-h:52px; --tabbar-h:38px; --leftbar-w:64px; --panel-w:260px;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{
+  font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg); color:var(--txt); overflow:hidden; user-select:none;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit; cursor:pointer; color:var(--txt); background:none; border:none;}
+input,select{font-family:inherit;}
+.hidden{display:none !important;}
+
+/* ===== 상단 바 ===== */
+#topbar{
+  height:var(--topbar-h); background:var(--panel); border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:8px; padding:0 12px; position:relative; z-index:50;
+}
+#topbar .logo-wrap{display:flex; flex-direction:column; justify-content:center; margin-right:6px; line-height:1;}
+#topbar .logo{font-weight:800; font-size:15px; letter-spacing:.3px; white-space:nowrap;}
+#topbar .logo span{color:var(--accent);}
+#topbar .maker{font-size:8px; color:var(--txt-dim); letter-spacing:1.5px; margin-top:2px; text-align:left;}
+.tb-group{display:flex; align-items:center; gap:4px;}
+.tb-sep{width:1px; height:24px; background:var(--line); margin:0 4px;}
+.tb-btn{
+  display:flex; align-items:center; gap:5px; padding:7px 11px; border-radius:6px;
+  font-size:13px; color:var(--txt); transition:background .12s; white-space:nowrap;
+}
+.tb-btn:hover{background:var(--panel2);}
+.tb-btn.primary{background:var(--accent); color:#fff;}
+.tb-btn.primary:hover{background:var(--accent2);}
+.tb-btn svg{width:16px; height:16px;}
+.spacer{flex:1;}
+#docName{
+  background:transparent; border:1px solid transparent; color:var(--txt); font-size:13px;
+  padding:5px 8px; border-radius:6px; width:170px; text-align:center;
+}
+#docName:hover{border-color:var(--line);}
+#docName:focus{outline:none; border-color:var(--accent); background:var(--bg);}
+
+/* ===== 본문 레이아웃 ===== */
+#main{display:flex; height:calc(100vh - var(--topbar-h) - var(--tabbar-h));}
+
+/* ===== 상단 문서 탭 바 ===== */
+#doctabs{
+  height:var(--tabbar-h); background:var(--bg); border-bottom:1px solid var(--line);
+  display:flex; align-items:flex-end; gap:2px; padding:0 8px; overflow-x:auto; flex-shrink:0;
+}
+.doc-tab{
+  display:flex; align-items:center; gap:8px; height:30px; padding:0 10px 0 14px;
+  background:var(--panel); border:1px solid var(--line); border-bottom:none;
+  border-radius:8px 8px 0 0; font-size:12px; color:var(--txt-dim); cursor:pointer;
+  max-width:200px; white-space:nowrap; transition:background .12s; flex-shrink:0;
+}
+.doc-tab:hover{background:var(--panel2); color:var(--txt);}
+.doc-tab.active{background:var(--panel2); color:var(--txt); border-color:var(--accent);}
+.doc-tab .dt-name{overflow:hidden; text-overflow:ellipsis; max-width:150px;}
+.doc-tab .dt-close{
+  width:18px; height:18px; border-radius:4px; display:flex; align-items:center;
+  justify-content:center; font-size:14px; opacity:.6; flex-shrink:0;
+}
+.doc-tab .dt-close:hover{background:var(--danger); color:#fff; opacity:1;}
+.doc-tab-add{
+  width:30px; height:30px; border-radius:8px 8px 0 0; font-size:18px; color:var(--txt-dim);
+  background:transparent; flex-shrink:0;
+}
+.doc-tab-add:hover{background:var(--panel); color:var(--accent);}
+
+/* 좌측 아이콘 바 */
+#leftbar{
+  width:var(--leftbar-w); background:var(--panel); border-right:1px solid var(--line);
+  display:flex; flex-direction:column; align-items:center; padding-top:8px; gap:2px; flex-shrink:0;
+}
+.lb-item{
+  width:52px; padding:9px 0; border-radius:8px; display:flex; flex-direction:column;
+  align-items:center; gap:4px; font-size:10px; color:var(--txt-dim); transition:all .12s;
+}
+.lb-item:hover{background:var(--panel2); color:var(--txt);}
+.lb-item.active{background:var(--accent); color:#fff;}
+.lb-item svg{width:20px; height:20px;}
+
+/* 좌측 확장 패널 */
+#sidepanel{
+  width:var(--panel-w); background:var(--panel2); border-right:1px solid var(--line);
+  overflow-y:auto; flex-shrink:0; padding:14px;
+}
+#sidepanel.collapsed{display:none;}
+.sp-title{font-size:13px; font-weight:700; margin-bottom:12px; color:var(--txt);}
+.sp-sub{font-size:11px; color:var(--txt-dim); margin:14px 0 7px; text-transform:uppercase; letter-spacing:.5px;}
+
+/* 캔버스 영역 */
+#stage{
+  flex:1; background:#16171b; overflow:auto; position:relative;
+  display:flex; align-items:flex-start; justify-content:center; padding:40px;
+}
+#canvasWrap{position:relative; box-shadow:0 8px 40px rgba(0,0,0,.5); background:#fff;}
+#zoomBar{
+  position:absolute; bottom:16px; right:16px; background:var(--panel); border:1px solid var(--line);
+  border-radius:8px; display:flex; align-items:center; gap:2px; padding:4px; z-index:30;
+}
+#zoomBar button{padding:5px 9px; border-radius:5px; font-size:13px;}
+#zoomBar button:hover{background:var(--panel2);}
+#zoomVal{font-size:12px; min-width:46px; text-align:center; color:var(--txt-dim);}
+
+/* 우측 속성 패널 */
+#rightbar{
+  width:var(--panel-w); background:var(--panel2); border-left:1px solid var(--line);
+  overflow-y:auto; flex-shrink:0; padding:14px;
+}
+#rightbar .empty{color:var(--txt-dim); font-size:12px; text-align:center; margin-top:40px; line-height:1.6;}
+
+/* ===== 컨텍스트 상단 툴(선택 시) ===== */
+#ctxbar{
+  position:absolute; top:calc(var(--topbar-h) + var(--tabbar-h) + 8px); left:50%; transform:translateX(-50%);
+  background:var(--panel); border:1px solid var(--line); border-radius:8px;
+  display:flex; align-items:center; gap:4px; padding:5px 8px; z-index:40;
+  box-shadow:0 4px 20px rgba(0,0,0,.4);
+}
+#ctxbar .cb-btn{padding:6px 9px; border-radius:5px; font-size:13px; display:flex; align-items:center; gap:5px;}
+#ctxbar .cb-btn:hover{background:var(--panel2);}
+#ctxbar .cb-btn svg{width:15px; height:15px;}
+#ctxbar input[type=color]{width:28px; height:28px; border:none; border-radius:5px; background:none; cursor:pointer;}
+
+/* ===== 폼 요소 ===== */
+.field{margin-bottom:12px;}
+.field label{display:block; font-size:11px; color:var(--txt-dim); margin-bottom:5px;}
+.field input[type=text], .field input[type=number], .field select{
+  width:100%; background:var(--bg); border:1px solid var(--line); color:var(--txt);
+  padding:8px 10px; border-radius:6px; font-size:13px;
+}
+.field input:focus, .field select:focus{outline:none; border-color:var(--accent);}
+.row2{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+.row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px;}
+.btn-full{
+  width:100%; background:var(--accent); color:#fff; padding:10px; border-radius:6px;
+  font-size:13px; font-weight:700; transition:background .12s;
+}
+.btn-full:hover{background:var(--accent2);}
+.btn-ghost{
+  width:100%; background:var(--bg); color:var(--txt); padding:9px; border-radius:6px;
+  font-size:12px; border:1px solid var(--line); margin-top:6px;
+}
+.btn-ghost:hover{border-color:var(--accent);}
+input[type=range]{width:100%; accent-color:var(--accent);}
+.slider-row{display:flex; align-items:center; gap:8px;}
+.slider-row span{font-size:11px; color:var(--txt-dim); min-width:34px; text-align:right;}
+
+/* 사이즈 프리셋 */
+.preset-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+.preset{
+  background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:12px 10px;
+  text-align:center; transition:all .12s;
+}
+.preset:hover{border-color:var(--accent); transform:translateY(-2px);}
+.preset .ic{width:34px; height:34px; margin:0 auto 7px; background:var(--panel); border-radius:5px;}
+.preset .nm{font-size:12px; font-weight:700;}
+.preset .dim{font-size:10px; color:var(--txt-dim); margin-top:2px;}
+
+/* 도형/요소 그리드 */
+.shape-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:8px;}
+.shape-btn{
+  aspect-ratio:1; background:var(--bg); border:1px solid var(--line); border-radius:8px;
+  display:flex; align-items:center; justify-content:center; transition:all .12s; font-size:20px;
+}
+.shape-btn:hover{border-color:var(--accent); background:var(--panel);}
+.shape-btn svg{width:24px; height:24px; stroke:var(--txt); fill:none;}
+
+/* 이모지 그리드 */
+.emoji-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:4px;}
+.emoji-btn{aspect-ratio:1; font-size:20px; border-radius:6px; transition:background .12s;}
+.emoji-btn:hover{background:var(--panel);}
+.emoji-cat{display:flex; gap:4px; flex-wrap:wrap; margin-bottom:10px;}
+.emoji-cat button{padding:5px 8px; font-size:14px; border-radius:6px; background:var(--bg);}
+.emoji-cat button.active{background:var(--accent);}
+
+/* 폰트 목록 */
+.font-item{
+  padding:11px 12px; background:var(--bg); border:1px solid var(--line); border-radius:7px;
+  margin-bottom:6px; font-size:16px; transition:all .12s; text-align:left;
+}
+.font-item:hover{border-color:var(--accent);}
+.font-item small{display:block; font-family:'Noto Sans KR'; font-size:10px; color:var(--txt-dim); margin-top:2px;}
+
+/* 워크스페이스 카드 */
+.ws-card{
+  background:var(--bg); border:1px solid var(--line); border-radius:8px; overflow:hidden;
+  margin-bottom:10px; transition:all .12s; cursor:pointer; position:relative;
+}
+.ws-card:hover{border-color:var(--accent);}
+.ws-card .thumb{width:100%; height:120px; background:#fff; object-fit:contain; display:block;}
+.ws-card .meta{padding:8px 10px;}
+.ws-card .meta .nm{font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.ws-card .meta .dt{font-size:10px; color:var(--txt-dim); margin-top:2px;}
+.ws-card .del{
+  position:absolute; top:6px; right:6px; width:24px; height:24px; border-radius:5px;
+  background:rgba(0,0,0,.6); color:#fff; display:flex; align-items:center; justify-content:center;
+  font-size:14px; opacity:0; transition:opacity .12s;
+}
+.ws-card:hover .del{opacity:1;}
+.ws-card .del:hover{background:var(--danger);}
+
+/* 레이어 패널 */
+.layer-item{
+  display:flex; align-items:center; gap:8px; padding:8px 10px; background:var(--bg);
+  border:1px solid var(--line); border-radius:6px; margin-bottom:5px; font-size:12px; cursor:pointer;
+}
+.layer-item:hover{border-color:var(--accent);}
+.layer-item.sel{border-color:var(--accent); background:var(--panel);}
+.layer-item .ic{font-size:14px; width:18px; text-align:center;}
+.layer-item .nm{flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.layer-item .vis{opacity:.6; padding:2px;}
+.layer-item .vis:hover{opacity:1;}
+
+/* 모달 */
+#modalBg{
+  position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:100;
+  display:flex; align-items:center; justify-content:center;
+}
+.modal{
+  background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:24px;
+  width:440px; max-width:90vw; max-height:85vh; overflow-y:auto;
+}
+.modal h2{font-size:17px; margin-bottom:6px;}
+.modal p{font-size:12px; color:var(--txt-dim); margin-bottom:18px; line-height:1.5;}
+.modal .acts{display:flex; gap:8px; margin-top:20px; justify-content:flex-end;}
+.modal .acts button{padding:9px 18px; border-radius:7px; font-size:13px;}
+.btn-cancel{background:var(--bg); border:1px solid var(--line);}
+.btn-go{background:var(--accent); color:#fff; font-weight:700;}
+
+/* 토스트 */
+#toast{
+  position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+  background:var(--panel); border:1px solid var(--line); padding:11px 20px; border-radius:8px;
+  font-size:13px; z-index:200; opacity:0; transition:all .25s; pointer-events:none;
+  box-shadow:0 6px 24px rgba(0,0,0,.4);
+}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+#toast.ok{border-color:var(--ok);}
+#toast.err{border-color:var(--danger);}
+
+/* 페이지 탭(카드뉴스 멀티페이지) */
+#pagebar{
+  position:absolute; bottom:16px; left:16px; display:flex; gap:6px; z-index:30;
+  background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:6px; max-width:60%; overflow-x:auto;
+}
+.page-tab{
+  min-width:46px; height:46px; border-radius:6px; border:2px solid var(--line); background:#fff;
+  font-size:11px; color:#333; display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0;
+}
+.page-tab.active{border-color:var(--accent);}
+.page-tab .pdel{position:absolute; top:-6px; right:-6px; width:16px; height:16px; border-radius:50%;
+  background:var(--danger); color:#fff; font-size:10px; display:none; align-items:center; justify-content:center;}
+.page-tab .pdup{position:absolute; top:-6px; left:-6px; width:16px; height:16px; border-radius:50%;
+  background:var(--accent); color:#fff; font-size:9px; display:none; align-items:center; justify-content:center;}
+.page-tab:hover .pdel, .page-tab:hover .pdup{display:flex;}
+.btn-ghost.unit-on{background:var(--accent); color:#fff; border-color:var(--accent);}
+#addPage{min-width:46px; height:46px; border-radius:6px; border:2px dashed var(--line); font-size:20px; color:var(--txt-dim); flex-shrink:0;}
+#addPage:hover{border-color:var(--accent); color:var(--accent);}
+
+::-webkit-scrollbar{width:9px; height:9px;}
+::-webkit-scrollbar-thumb{background:var(--line); border-radius:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+
+<!-- ============ 상단 바 ============ -->
+<div id="topbar">
+  <div class="logo-wrap">
+    <div class="logo">CANVAS <span>MAGIC</span></div>
+    <div class="maker">by YOPY</div>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <button class="tb-btn" id="btnNew" title="새 캔버스">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> 새로
+    </button>
+    <button class="tb-btn" id="btnSave" title="워크스페이스에 저장 (Ctrl+S)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg> 저장
+    </button>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="tb-group">
+    <button class="tb-btn" id="btnUndo" title="실행 취소 (Ctrl+Z)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+    </button>
+    <button class="tb-btn" id="btnRedo" title="다시 실행 (Ctrl+Y)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+    </button>
+  </div>
+
+  <input id="docName" value="제목 없는 디자인">
+
+  <div class="spacer"></div>
+
+  <div class="tb-group">
+    <button class="tb-btn" id="btnProjLoad" title="프로젝트 파일 불러오기">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> 불러오기
+    </button>
+    <button class="tb-btn" id="btnProjSave" title="프로젝트 파일로 저장 (.json)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5-5 5 5M12 5v10" transform="rotate(180 12 12)"/></svg> 프로젝트
+    </button>
+    <button class="tb-btn primary" id="btnExport" title="다운로드">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> 다운로드
+    </button>
+  </div>
+</div>
+
+<!-- ============ 문서 탭 바 ============ -->
+<div id="doctabs"></div>
+
+<!-- ============ 본문 ============ -->
+<div id="main">
+
+  <!-- 좌측 아이콘 바 -->
+  <div id="leftbar">
+    <button class="lb-item active" data-panel="size">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>사이즈
+    </button>
+    <button class="lb-item" data-panel="text">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>텍스트
+    </button>
+    <button class="lb-item" data-panel="shape">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="5"/><rect x="12" y="12" width="9" height="9"/></svg>도형
+    </button>
+    <button class="lb-item" data-panel="icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21.4 8 14 2 9.4h7.6z"/></svg>아이콘
+    </button>
+    <button class="lb-item" data-panel="draw">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>그리기
+    </button>
+    <button class="lb-item" data-panel="emoji">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>이모지
+    </button>
+    <button class="lb-item" data-panel="image">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>이미지
+    </button>
+    <button class="lb-item" data-panel="frame">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg>프레임
+    </button>
+    <button class="lb-item" data-panel="table">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>표
+    </button>
+    <button class="lb-item" data-panel="font">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20l5-14 5 14M6 14h6M16 20l4-10 4 10M18 16h4" transform="scale(0.85) translate(2 2)"/></svg>폰트
+    </button>
+    <button class="lb-item" data-panel="layer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l9 5-9 5-9-5 9-5zM3 12l9 5 9-5M3 17l9 5 9-5"/></svg>레이어
+    </button>
+    <button class="lb-item" data-panel="workspace">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18v13H3zM3 7l2-4h14l2 4M9 12h6"/></svg>보관함
+    </button>
+  </div>
+
+  <!-- 좌측 확장 패널 -->
+  <div id="sidepanel"></div>
+
+  <!-- 캔버스 무대 -->
+  <div id="stage">
+    <div id="canvasWrap">
+      <canvas id="fcanvas"></canvas>
+    </div>
+    <div id="pagebar">
+      <button id="addPage" title="페이지 추가">+</button>
+    </div>
+    <div id="zoomBar">
+      <button id="zoomOut">−</button>
+      <span id="zoomVal">100%</span>
+      <button id="zoomIn">+</button>
+      <button id="zoomFit" title="화면 맞춤">⛶</button>
+      <button id="snapToggle" title="스냅/가이드선 켜짐" style="color:var(--accent)">🧲</button>
+    </div>
+  </div>
+
+  <!-- 우측 속성 패널 -->
+  <div id="rightbar"><div class="empty">개체를 선택하면<br>속성이 여기에 표시됩니다</div></div>
+
+</div>
+
+<!-- 컨텍스트 툴바 (선택 시 표시) -->
+<div id="ctxbar" class="hidden"></div>
+
+<!-- 모달 / 토스트 -->
+<div id="modalBg" class="hidden"><div class="modal" id="modalBox"></div></div>
+<div id="toast"></div>
+
+<!-- 숨겨진 파일 입력 -->
+<input type="file" id="imgInput" accept="image/*" class="hidden">
+<input type="file" id="projInput" accept=".json,application/json" class="hidden">
+
+<!-- ============ 라이브러리 ============ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.js"></script>
+
+<script>
+/* =====================================================================
+   도형 & 아이콘 라이브러리
+   모든 path는 100×100 viewBox 기준. fabric.Path로 렌더링.
+   - SHAPES: 채워진 도형 (fill 기본), 카테고리별
+   - ICONS:  선/면 아이콘 (장식용)
+   ===================================================================== */
+
+/* path 헬퍼: 정다각형 */
+function polyPath(cx, cy, r, sides, rot=-90){
+  let d='';
+  for(let i=0;i<sides;i++){
+    const a=(360/sides*i+rot)*Math.PI/180;
+    const x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r;
+    d+=(i===0?'M':'L')+x.toFixed(1)+' '+y.toFixed(1);
+  }
+  return d+'Z';
+}
+/* path 헬퍼: 별 */
+function starPath(cx, cy, R, r, points, rot=-90){
+  let d='';
+  for(let i=0;i<points*2;i++){
+    const rad=(i%2===0)?R:r;
+    const a=(180/points*i+rot)*Math.PI/180;
+    const x=cx+Math.cos(a)*rad, y=cy+Math.sin(a)*rad;
+    d+=(i===0?'M':'L')+x.toFixed(1)+' '+y.toFixed(1);
+  }
+  return d+'Z';
+}
+
+/* ---------- 도형 (채움) : 카테고리별 100개 이상 ---------- */
+const SHAPES = {
+  '기본': [
+    {n:'정사각형', d:'M10 10 H90 V90 H10 Z'},
+    {n:'직사각형', d:'M5 25 H95 V75 H5 Z'},
+    {n:'둥근사각', d:'M20 10 H80 A10 10 0 0 1 90 20 V80 A10 10 0 0 1 80 90 H20 A10 10 0 0 1 10 80 V20 A10 10 0 0 1 20 10 Z'},
+    {n:'원', d:'M50 5 A45 45 0 1 1 49.9 5 Z'},
+    {n:'타원', d:'M50 20 A40 30 0 1 1 49.9 20 Z'},
+    {n:'반원', d:'M5 50 A45 45 0 0 1 95 50 Z'},
+    {n:'1/4원', d:'M10 90 V10 A80 80 0 0 1 90 90 Z'},
+    {n:'삼각형', d:'M50 10 L90 85 H10 Z'},
+    {n:'역삼각형', d:'M10 15 H90 L50 90 Z'},
+    {n:'직각삼각형', d:'M10 10 V90 H90 Z'},
+    {n:'마름모', d:polyPath(50,50,45,4)},
+    {n:'평행사변형', d:'M25 20 H90 L75 80 H10 Z'},
+    {n:'사다리꼴', d:'M30 20 H70 L90 80 H10 Z'},
+    {n:'오각형', d:polyPath(50,52,45,5)},
+    {n:'육각형', d:polyPath(50,50,45,6)},
+    {n:'육각형(가로)', d:polyPath(50,50,45,6,0)},
+    {n:'칠각형', d:polyPath(50,52,45,7)},
+    {n:'팔각형', d:polyPath(50,50,45,8)},
+    {n:'구각형', d:polyPath(50,52,45,9)},
+    {n:'십각형', d:polyPath(50,50,45,10)},
+    {n:'십이각형', d:polyPath(50,50,45,12)},
+    {n:'십육각형', d:polyPath(50,50,45,16)},
+    {n:'가로반원', d:'M50 5 A45 45 0 0 1 50 95 Z'},
+    {n:'아치', d:'M15 90 V45 A35 35 0 0 1 85 45 V90 Z'},
+    {n:'캡슐', d:'M30 30 H70 A20 20 0 0 1 70 70 H30 A20 20 0 0 1 30 30 Z'},
+    {n:'세로캡슐', d:'M30 30 A20 20 0 0 1 70 30 V70 A20 20 0 0 1 30 70 Z'},
+    {n:'모서리둥근삼각', d:'M50 14 Q56 14 60 22 L86 74 Q90 84 80 84 H20 Q10 84 14 74 L40 22 Q44 14 50 14 Z'},
+  ],
+  '별/뱃지': [
+    {n:'별4', d:starPath(50,50,46,16,4)},
+    {n:'별5', d:starPath(50,52,46,20,5)},
+    {n:'별6', d:starPath(50,50,46,22,6)},
+    {n:'별8', d:starPath(50,50,46,24,8)},
+    {n:'별12', d:starPath(50,50,46,30,12)},
+    {n:'반짝별', d:'M50 5 C55 35 65 45 95 50 C65 55 55 65 50 95 C45 65 35 55 5 50 C35 45 45 35 50 5 Z'},
+    {n:'폭발8', d:starPath(50,50,48,30,8)},
+    {n:'폭발12', d:starPath(50,50,48,32,12)},
+    {n:'폭발16', d:starPath(50,50,48,36,16)},
+    {n:'씰뱃지', d:starPath(50,50,48,40,16)},
+    {n:'리본별', d:'M50 5 L61 38 H96 L68 59 L79 92 L50 72 L21 92 L32 59 L4 38 H39 Z'},
+    {n:'둥근별', d:'M50 8 Q57 38 88 42 Q62 55 70 88 Q50 68 30 88 Q38 55 12 42 Q43 38 50 8 Z'},
+  ],
+  '화살표': [
+    {n:'→', d:'M5 40 H60 V25 L95 50 L60 75 V60 H5 Z'},
+    {n:'←', d:'M95 40 H40 V25 L5 50 L40 75 V60 H95 Z'},
+    {n:'↑', d:'M40 95 V40 H25 L50 5 L75 40 H60 V95 Z'},
+    {n:'↓', d:'M40 5 V60 H25 L50 95 L75 60 H60 V5 Z'},
+    {n:'↔', d:'M5 50 L30 30 V42 H70 V30 L95 50 L70 70 V58 H30 V70 Z'},
+    {n:'↕', d:'M50 5 L70 30 H58 V70 H70 L50 95 L30 70 H42 V30 H30 Z'},
+    {n:'굵은→', d:'M10 35 H55 V20 L95 50 L55 80 V65 H10 Z'},
+    {n:'얇은→', d:'M5 45 H65 V32 L95 50 L65 68 V55 H5 Z'},
+    {n:'꺾인↱', d:'M20 90 V40 A20 20 0 0 1 40 20 H65 V8 L92 28 L65 48 V36 H45 A5 5 0 0 0 40 41 V90 Z'},
+    {n:'유턴', d:'M30 90 V45 A20 20 0 0 1 70 45 V70 H82 L62 92 L42 70 H54 V45 A4 4 0 0 0 46 45 V90 Z'},
+    {n:'V자', d:'M20 25 L50 60 L80 25 L92 38 L50 85 L8 38 Z'},
+    {n:'∧자', d:'M20 75 L50 40 L80 75 L92 62 L50 15 L8 62 Z'},
+    {n:'재생▶', d:'M20 15 L85 50 L20 85 Z'},
+    {n:'양방향굵은', d:'M5 50 L28 28 V42 H72 V28 L95 50 L72 72 V58 H28 V72 Z'},
+  ],
+  '말풍선': [
+    {n:'사각말풍선', d:'M10 15 H90 V70 H45 L30 88 V70 H10 Z'},
+    {n:'둥근말풍선', d:'M20 15 H80 A12 12 0 0 1 92 27 V58 A12 12 0 0 1 80 70 H50 L33 88 V70 H20 A12 12 0 0 1 8 58 V27 A12 12 0 0 1 20 15 Z'},
+    {n:'타원말풍선', d:'M50 12 C78 12 92 28 92 42 C92 56 78 70 50 70 C44 70 38 69 33 67 L18 82 L24 64 C14 58 8 50 8 42 C8 28 22 12 50 12 Z'},
+    {n:'생각풍선', d:'M50 10 C75 10 90 25 90 40 C90 55 75 68 50 68 C40 68 32 66 26 62 C24 70 18 74 12 74 C16 70 17 65 16 60 C11 55 10 48 10 40 C10 25 25 10 50 10 Z'},
+    {n:'사각외침', d:'M8 18 H92 V62 H40 L18 86 L26 62 H8 Z'},
+    {n:'양쪽꼬리', d:'M15 20 H85 V65 H62 L50 82 L38 65 H15 Z'},
+  ],
+  '기호/심볼': [
+    {n:'하트', d:'M50 85 C20 60 10 45 10 32 A18 18 0 0 1 50 22 A18 18 0 0 1 90 32 C90 45 80 60 50 85 Z'},
+    {n:'플러스', d:'M40 10 H60 V40 H90 V60 H60 V90 H40 V60 H10 V40 H40 Z'},
+    {n:'마이너스', d:'M10 42 H90 V58 H10 Z'},
+    {n:'곱하기', d:'M22 10 L50 38 L78 10 L90 22 L62 50 L90 78 L78 90 L50 62 L22 90 L10 78 L38 50 L10 22 Z'},
+    {n:'체크', d:'M15 50 L40 75 L88 20 L78 12 L40 56 L25 40 Z'},
+    {n:'금지', d:'M50 5 A45 45 0 1 1 49.9 5 Z M25 25 L75 75 M75 25 L25 75',f:false,s:true},
+    {n:'느낌표', d:'M42 10 H58 L55 60 H45 Z M42 72 H58 V88 H42 Z'},
+    {n:'물음표', d:'M30 30 A20 20 0 1 1 55 52 V62 H45 V48 A12 12 0 1 0 38 30 Z M45 72 H55 V86 H45 Z'},
+    {n:'전구', d:'M50 8 A28 28 0 0 1 68 58 L62 70 H38 L32 58 A28 28 0 0 1 50 8 Z M40 76 H60 V82 H40 Z M43 86 H57 V90 H43 Z'},
+    {n:'십자가', d:'M42 8 H58 V35 H88 V51 H58 V92 H42 V51 H12 V35 H42 Z'},
+    {n:'달', d:'M65 10 A40 40 0 1 0 65 90 A32 32 0 1 1 65 10 Z'},
+    {n:'태양', d:starPath(50,50,48,28,12)},
+    {n:'무한대', d:'M28 35 A15 15 0 1 1 50 50 A15 15 0 1 0 72 65 A15 15 0 1 1 50 50 A15 15 0 1 0 28 35 Z'},
+    {n:'남성', d:'M58 12 H88 V42 H78 V28 L64 42 A22 22 0 1 1 56 34 L70 20 H58 Z',f:false,s:true},
+    {n:'여성', d:'M50 8 A20 20 0 1 1 49.9 8 M50 48 V92 M35 72 H65',f:false,s:true},
+  ],
+  '날씨/자연': [
+    {n:'구름', d:'M28 70 A18 18 0 0 1 30 35 A22 22 0 0 1 72 38 A16 16 0 0 1 75 70 Z'},
+    {n:'물방울', d:'M50 8 C50 8 80 45 80 62 A30 30 0 0 1 20 62 C20 45 50 8 50 8 Z'},
+    {n:'번개', d:'M55 5 L25 52 H45 L40 95 L75 40 H53 Z'},
+    {n:'눈송이', d:'M50 5 V95 M5 50 H95 M18 18 L82 82 M82 18 L18 82',f:false,s:true},
+    {n:'나뭇잎', d:'M20 80 C20 30 60 15 85 15 C85 60 50 85 20 80 Z M30 70 Q55 45 78 28',f:false,s:true},
+    {n:'나무', d:'M50 8 A25 25 0 0 1 70 50 A22 22 0 0 1 45 70 H55 V92 H45 V70 A22 22 0 0 1 30 50 A25 25 0 0 1 50 8 Z'},
+    {n:'불꽃', d:'M50 8 C62 28 72 38 72 58 A22 22 0 0 1 28 58 C28 45 38 42 40 30 C48 40 45 50 52 52 C58 48 52 30 50 8 Z'},
+    {n:'산', d:'M5 85 L35 30 L52 58 L65 38 L95 85 Z'},
+    {n:'무지개', d:'M10 80 A40 40 0 0 1 90 80 H78 A28 28 0 0 0 22 80 Z'},
+    {n:'꽃', d:'M50 50 m-12 0 a12 12 0 1 1 24 0 a12 12 0 1 1 -24 0 M50 18 A12 12 0 0 1 50 42 M50 58 A12 12 0 0 1 50 82 M18 50 A12 12 0 0 1 42 50 M58 50 A12 12 0 0 1 82 50 M27 27 A12 12 0 0 1 44 44 M56 56 A12 12 0 0 1 73 73 M73 27 A12 12 0 0 1 56 44 M44 56 A12 12 0 0 1 27 73'},
+  ],
+  '배너/리본': [
+    {n:'리본', d:'M10 25 H90 V65 L80 55 L70 65 L60 55 L50 65 L40 55 L30 65 L20 55 L10 65 Z'},
+    {n:'깃발', d:'M15 15 V85 M15 18 H85 L72 35 L85 52 H15',f:false,s:true},
+    {n:'좌우리본', d:'M5 35 L20 50 L5 65 V35 Z M95 35 L80 50 L95 65 V35 Z M18 30 H82 V70 H18 Z'},
+    {n:'아래리본', d:'M25 10 H75 V80 L50 62 L25 80 Z'},
+    {n:'책갈피', d:'M28 8 H72 V92 L50 72 L28 92 Z'},
+    {n:'태그', d:'M10 30 L55 30 L90 65 L60 95 L25 60 V30 Z M28 42 A6 6 0 1 0 28 41 Z'},
+    {n:'펼침배너', d:'M10 30 H90 V62 H10 Z M10 30 L2 50 L10 70 M90 30 L98 50 L90 70',f:false,s:true},
+  ],
+  '도형(특수)': [
+    {n:'십자', d:'M38 10 H62 V38 H90 V62 H62 V90 H38 V62 H10 V38 H38 Z'},
+    {n:'L자', d:'M15 15 H40 V60 H85 V85 H15 Z'},
+    {n:'계단', d:'M15 85 V60 H40 V35 H65 V10 H90 V85 Z'},
+    {n:'화살촉', d:'M20 15 L80 50 L20 85 V62 L50 50 L20 38 Z'},
+    {n:'방패', d:'M50 8 L88 20 V50 C88 72 70 86 50 92 C30 86 12 72 12 50 V20 Z'},
+    {n:'육각너트', d:polyPath(50,50,45,6)+' '+'M50 32 A18 18 0 1 0 50.1 32 Z'},
+    {n:'기어', d:'M50 5 L57 14 L68 12 L70 23 L81 27 L78 38 L88 45 L82 54 L88 63 L77 67 L78 78 L67 76 L60 85 L50 80 L40 85 L33 76 L22 78 L23 67 L12 63 L18 54 L12 45 L22 38 L19 27 L30 23 L32 12 L43 14 Z M50 35 A15 15 0 1 0 50.1 35 Z'},
+    {n:'대화상자', d:'M10 12 H90 V72 H35 L20 90 V72 H10 Z'},
+    {n:'폴더', d:'M10 25 H40 L48 33 H90 V82 H10 Z'},
+    {n:'위치핀', d:'M50 8 A28 28 0 0 1 78 36 C78 58 50 92 50 92 C50 92 22 58 22 36 A28 28 0 0 1 50 8 Z M50 26 A10 10 0 1 0 50.1 26 Z'},
+    {n:'블롭1', d:'M50 10 C75 12 92 30 88 52 C84 74 68 90 46 88 C24 86 8 68 12 46 C16 24 25 8 50 10 Z'},
+    {n:'블롭2', d:'M55 8 C80 15 95 40 85 62 C76 82 52 92 32 84 C12 76 5 50 16 30 C26 12 30 1 55 8 Z'},
+    {n:'블롭3', d:'M48 6 C72 4 96 22 94 48 C92 72 76 96 50 94 C26 92 4 74 6 48 C8 24 24 8 48 6 Z'},
+    {n:'물결사각', d:'M10 20 Q30 10 50 20 T90 20 V80 Q70 90 50 80 T10 80 Z'},
+  ],
+};
+
+/* ---------- 장식용 아이콘 50+ (대부분 선 아이콘) ---------- */
+const ICONS = {
+  '소셜/UI': [
+    {n:'홈', d:'M50 12 L88 45 H78 V85 H58 V60 H42 V85 H22 V45 H12 Z',f:false,s:true},
+    {n:'사용자', d:'M50 15 A16 16 0 1 1 49.9 15 M20 88 A30 24 0 0 1 80 88',f:false,s:true},
+    {n:'설정', d:'M50 35 A15 15 0 1 0 50.1 35 M50 5 L57 14 L68 12 L70 23 L81 27 L78 38 L88 45 L82 54 L88 63 L77 67 L78 78 L67 76 L60 85 L50 80 L40 85 L33 76 L22 78 L23 67 L12 63 L18 54 L12 45 L22 38 L19 27 L30 23 L32 12 L43 14 Z',f:false,s:true},
+    {n:'검색', d:'M42 42 m-28 0 a28 28 0 1 0 56 0 a28 28 0 1 0 -56 0 M63 63 L90 90',f:false,s:true},
+    {n:'좋아요', d:'M30 90 V45 H18 V90 Z M30 45 L52 8 C60 8 64 14 60 28 L56 42 H82 C90 42 92 50 88 60 L80 84 C78 88 74 90 70 90 H30',f:false,s:true},
+    {n:'알림', d:'M30 70 V45 A20 20 0 0 1 70 45 V70 L80 80 H20 Z M40 80 A10 10 0 0 0 60 80',f:false,s:true},
+    {n:'메일', d:'M10 25 H90 V75 H10 Z M10 28 L50 55 L90 28',f:false,s:true},
+    {n:'카메라', d:'M10 30 H30 L38 20 H62 L70 30 H90 V82 H10 Z M50 55 m-16 0 a16 16 0 1 0 32 0 a16 16 0 1 0 -32 0',f:false,s:true},
+    {n:'장바구니', d:'M12 18 H24 L34 62 H78 L88 32 H30 M40 80 A6 6 0 1 1 39 80 M74 80 A6 6 0 1 1 73 80',f:false,s:true},
+    {n:'링크', d:'M40 60 L60 40 M35 50 L22 63 A14 14 0 0 0 42 83 L55 70 M65 50 L78 37 A14 14 0 0 0 58 17 L45 30',f:false,s:true},
+    {n:'위치', d:'M50 10 A26 26 0 0 1 76 36 C76 56 50 90 50 90 C50 90 24 56 24 36 A26 26 0 0 1 50 10 M50 28 A8 8 0 1 0 50.1 28',f:false,s:true},
+    {n:'달력', d:'M15 22 H85 V85 H15 Z M15 38 H85 M32 12 V30 M68 12 V30',f:false,s:true},
+    {n:'시계', d:'M50 50 m-42 0 a42 42 0 1 0 84 0 a42 42 0 1 0 -84 0 M50 25 V50 L68 62',f:false,s:true},
+    {n:'잠금', d:'M25 45 H75 V88 H25 Z M35 45 V32 A15 15 0 0 1 65 32 V45',f:false,s:true},
+    {n:'휴지통', d:'M22 28 H78 M30 28 V85 H70 V28 M40 28 V18 H60 V28 M42 40 V72 M58 40 V72',f:false,s:true},
+  ],
+  '미디어': [
+    {n:'재생', d:'M25 15 L82 50 L25 85 Z',f:false,s:true},
+    {n:'일시정지', d:'M28 18 H44 V82 H28 Z M56 18 H72 V82 H56 Z',f:false,s:true},
+    {n:'정지', d:'M22 22 H78 V78 H22 Z',f:false,s:true},
+    {n:'음표', d:'M40 75 A12 9 0 1 1 39 75 V25 L78 15 V62 A12 9 0 1 1 77 62 V32 L52 39 V75',f:false,s:true},
+    {n:'음량', d:'M15 38 H30 L50 20 V80 L30 62 H15 Z M62 35 A20 20 0 0 1 62 65 M70 25 A32 32 0 0 1 70 75',f:false,s:true},
+    {n:'마이크', d:'M50 12 A12 12 0 0 1 62 24 V46 A12 12 0 0 1 38 46 V24 A12 12 0 0 1 50 12 M28 44 A22 22 0 0 0 72 44 M50 66 V86 M35 86 H65',f:false,s:true},
+    {n:'이미지', d:'M12 18 H88 V82 H12 Z M30 40 A8 8 0 1 1 29 40 M12 70 L38 48 L60 66 L75 54 L88 66',f:false,s:true},
+    {n:'영상', d:'M12 28 H62 V72 H12 Z M62 42 L88 28 V72 L62 58 Z',f:false,s:true},
+    {n:'헤드폰', d:'M20 58 V48 A30 30 0 0 1 80 48 V58 M14 58 H30 V82 H20 A6 6 0 0 1 14 76 Z M86 58 H70 V82 H80 A6 6 0 0 0 86 76 Z',f:false,s:true},
+  ],
+  '비즈니스': [
+    {n:'그래프', d:'M15 15 V85 H85 M30 70 V50 M48 70 V35 M66 70 V45 M82 70 V25',f:false,s:true},
+    {n:'파이', d:'M50 50 m-40 0 a40 40 0 1 0 80 0 a40 40 0 1 0 -80 0 M50 50 V10 M50 50 L85 65',f:false,s:true},
+    {n:'화폐$', d:'M50 12 V88 M68 28 A18 12 0 0 0 50 22 A15 12 0 0 0 50 50 A15 12 0 0 1 50 78 A18 12 0 0 1 32 72',f:false,s:true},
+    {n:'서류', d:'M25 10 H62 L80 28 V90 H25 Z M62 10 V28 H80 M36 45 H68 M36 58 H68 M36 71 H58',f:false,s:true},
+    {n:'전구아이디어', d:'M50 12 A26 26 0 0 1 64 60 V70 H36 V60 A26 26 0 0 1 50 12 M40 78 H60 M43 86 H57',f:false,s:true},
+    {n:'타겟', d:'M50 50 m-40 0 a40 40 0 1 0 80 0 a40 40 0 1 0 -80 0 M50 50 m-22 0 a22 22 0 1 0 44 0 a22 22 0 1 0 -44 0 M50 50 m-6 0 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0',f:false,s:true},
+    {n:'트로피', d:'M32 15 H68 V40 A18 18 0 0 1 32 40 Z M32 22 H18 V32 A12 12 0 0 0 32 42 M68 22 H82 V32 A12 12 0 0 1 68 42 M50 58 V72 M38 88 H62 L58 72 H42 Z',f:false,s:true},
+    {n:'가방', d:'M20 35 H80 V85 H20 Z M38 35 V25 A12 12 0 0 1 62 25 V35',f:false,s:true},
+    {n:'악수', d:'M10 45 L30 35 L50 45 L70 35 L90 45 M30 35 V62 M70 35 V62 M40 55 L52 63 L64 55',f:false,s:true},
+  ],
+  '장식': [
+    {n:'왕관', d:'M15 75 H85 L80 35 L62 52 L50 25 L38 52 L20 35 Z',f:false,s:true},
+    {n:'다이아', d:'M30 15 H70 L90 40 L50 90 L10 40 Z M30 15 L40 40 H60 L70 15 M10 40 H90 M40 40 L50 90 L60 40',f:false,s:true},
+    {n:'반짝', d:'M50 10 C54 36 64 46 90 50 C64 54 54 64 50 90 C46 64 36 54 10 50 C36 46 46 36 50 10 Z',f:true},
+    {n:'작은별', d:starPath(50,52,40,16,5),f:true},
+    {n:'꽃잎4', d:'M50 50 Q50 12 50 12 Q72 28 50 50 Q88 50 88 50 Q72 72 50 50 Q50 88 50 88 Q28 72 50 50 Q12 50 12 50 Q28 28 50 50',f:true},
+    {n:'리프', d:'M50 90 C50 90 15 60 15 35 A35 35 0 0 1 85 35 C85 60 50 90 50 90 M50 90 V30',f:false,s:true},
+    {n:'깃털', d:'M70 20 C40 30 20 60 25 85 C50 80 80 60 80 30 Z M70 20 L30 78',f:false,s:true},
+    {n:'매듭', d:'M50 20 A18 18 0 1 0 50 56 A18 18 0 1 1 50 92 M50 20 A18 18 0 1 1 50 56 A18 18 0 1 0 50 92',f:false,s:true},
+    {n:'화환', d:'M50 88 A38 38 0 1 1 50 12 M50 88 A38 38 0 1 0 50 12',f:false,s:true},
+    {n:'손글씨선', d:'M8 60 Q25 30 40 60 T72 60 Q85 60 92 45',f:false,s:true},
+    {n:'물결선', d:'M5 50 Q20 30 35 50 T65 50 T95 50',f:false,s:true},
+    {n:'점선원', d:'M50 50 m-40 0 a40 40 0 1 0 80 0 a40 40 0 1 0 -80 0',f:false,s:true,dash:true},
+    {n:'코너장식', d:'M10 90 V40 Q10 10 40 10 H90 M25 90 V48 Q25 25 48 25 H90',f:false,s:true},
+    {n:'별가루', d:'M25 25 L30 35 L40 30 M70 20 L73 30 M50 60 L55 72 L65 68 M75 60 L80 70',f:false,s:true},
+    {n:'하트장식', d:'M50 78 C28 60 18 48 18 36 A14 14 0 0 1 50 28 A14 14 0 0 1 82 36 C82 48 72 60 50 78 Z',f:true},
+    {n:'별3', d:starPath(50,55,42,18,3),f:true},
+    {n:'태양장식', d:'M50 50 m-18 0 a18 18 0 1 0 36 0 a18 18 0 1 0 -36 0 M50 8 V22 M50 78 V92 M8 50 H22 M78 50 H92 M20 20 L30 30 M70 70 L80 80 M80 20 L70 30 M30 70 L20 80',f:false,s:true},
+  ],
+};
+
+/* ---------- 이미지 프레임 모양 30종 (100×100 viewBox, 닫힌 path) ---------- */
+const FRAMES = [
+  {n:'사각',      d:'M5 5 H95 V95 H5 Z'},
+  {n:'가로직사각', d:'M5 22 H95 V78 H5 Z'},
+  {n:'세로직사각', d:'M22 5 H78 V95 H22 Z'},
+  {n:'둥근사각',   d:'M22 5 H78 A17 17 0 0 1 95 22 V78 A17 17 0 0 1 78 95 H22 A17 17 0 0 1 5 78 V22 A17 17 0 0 1 22 5 Z'},
+  {n:'더둥근사각', d:'M30 5 H70 A25 25 0 0 1 95 30 V70 A25 25 0 0 1 70 95 H30 A25 25 0 0 1 5 70 V30 A25 25 0 0 1 30 5 Z'},
+  {n:'원',        d:'M50 5 A45 45 0 1 1 49.9 5 Z'},
+  {n:'타원가로',   d:'M50 22 A45 28 0 1 1 49.9 22 Z'},
+  {n:'타원세로',   d:'M50 5 A28 45 0 1 1 49.9 5 Z'},
+  {n:'삼각형',     d:'M50 6 L92 88 H8 Z'},
+  {n:'역삼각형',   d:'M8 12 H92 L50 94 Z'},
+  {n:'마름모',     d:polyPath(50,50,46,4)},
+  {n:'오각형',     d:polyPath(50,52,46,5)},
+  {n:'육각형세로', d:polyPath(50,50,46,6)},
+  {n:'육각형가로', d:polyPath(50,50,46,6,0)},
+  {n:'팔각형',     d:polyPath(50,50,46,8)},
+  {n:'별5',        d:starPath(50,52,47,21,5)},
+  {n:'별6',        d:starPath(50,50,47,23,6)},
+  {n:'하트',       d:'M50 90 C18 64 6 48 6 32 A20 20 0 0 1 50 20 A20 20 0 0 1 94 32 C94 48 82 64 50 90 Z'},
+  {n:'물방울',     d:'M50 6 C50 6 86 48 86 66 A36 36 0 0 1 14 66 C14 48 50 6 50 6 Z'},
+  {n:'방패',       d:'M50 6 L90 18 V52 C90 76 72 90 50 96 C28 90 10 76 10 52 V18 Z'},
+  {n:'아치',       d:'M12 95 V44 A38 38 0 0 1 88 44 V95 Z'},
+  {n:'반원',       d:'M5 50 A45 45 0 0 1 95 50 Z'},
+  {n:'잎사귀',     d:'M50 5 C80 15 92 45 90 92 C45 90 12 78 10 48 C9 25 25 10 50 5 Z'},
+  {n:'꽃잎',       d:'M50 8 C62 8 70 20 68 32 C80 28 92 36 90 50 C92 64 80 72 68 68 C70 80 62 92 50 92 C38 92 30 80 32 68 C20 72 8 64 10 50 C8 36 20 28 32 32 C30 20 38 8 50 8 Z'},
+  {n:'블롭1',      d:'M52 6 C78 8 96 28 92 54 C88 78 70 96 44 92 C20 88 4 68 8 44 C12 22 26 4 52 6 Z'},
+  {n:'블롭2',      d:'M58 8 C82 14 96 40 88 64 C80 86 54 96 32 86 C12 76 4 50 14 28 C24 8 34 2 58 8 Z'},
+  {n:'필름프레임', d:'M10 8 H90 V92 H10 Z M10 20 H90 M10 80 H90'},
+  {n:'TV둥근',     d:'M10 18 Q10 10 22 10 H78 Q90 10 90 18 V82 Q90 90 78 90 H22 Q10 90 10 82 Z'},
+  {n:'카드세로',   d:'M20 4 H80 V96 H20 Z'},
+  {n:'십자형',     d:'M36 6 H64 V36 H94 V64 H64 V94 H36 V64 H6 V36 H36 Z'},
+];
+
+
+/* =====================================================================
+   CanvaLite - 단일 파일 디자인 에디터
+   엔진: Fabric.js / 내보내기: jsPDF, PptxGenJS, gif.js
+   ===================================================================== */
+
+/* ---------- 폰트 목록 (모두 OFL/Apache 등 상업적 사용 가능) ---------- */
+/* wts: 실제 존재하는 굵기. 단일 weight 폰트는 faux bold를 막기 위해 그 값만 사용 */
+const KOREAN_FONTS = [
+  {f:'Noto Sans KR',   n:'본고딕',       w:'본문용 산세리프', wts:[400,700]},
+  {f:'Noto Serif KR',  n:'본명조',       w:'본문용 세리프',   wts:[400,700]},
+  {f:'Nanum Gothic',   n:'나눔고딕',     w:'깔끔한 고딕',     wts:[400,700]},
+  {f:'Nanum Myeongjo', n:'나눔명조',     w:'우아한 명조',     wts:[400,700]},
+  {f:'Nanum Pen Script', n:'나눔손글씨 펜', w:'손글씨',        wts:[400]},
+  {f:'Nanum Brush Script', n:'나눔손글씨 붓', w:'붓글씨',      wts:[400]},
+  {f:'Black Han Sans', n:'검은고딕',     w:'굵은 제목용',     wts:[400]},
+  {f:'Do Hyeon',       n:'도현',         w:'둥근 제목체',     wts:[400]},
+  {f:'Jua',            n:'주아',         w:'친근한 둥근체',   wts:[400]},
+  {f:'Gaegu',          n:'개구',         w:'손글씨 느낌',     wts:[400,700]},
+  {f:'Gamja Flower',   n:'감자꽃',       w:'아기자기',        wts:[400]},
+  {f:'Hi Melody',      n:'하이멜로디',   w:'동글동글',        wts:[400]},
+  {f:'Single Day',     n:'싱글데이',     w:'손글씨',          wts:[400]},
+  {f:'Song Myung',     n:'송명',         w:'고전 명조',       wts:[400]},
+  {f:'Stylish',        n:'스타일리시',   w:'세련된 고딕',     wts:[400]},
+  {f:'Sunflower',      n:'해바라기',     w:'산뜻한 고딕',     wts:[300,500,700]},
+  {f:'Cute Font',      n:'큐트',         w:'귀여운 손글씨',   wts:[400]},
+  {f:'Dokdo',          n:'독도',         w:'거친 손글씨',     wts:[400]},
+  {f:'East Sea Dokdo', n:'동해독도',     w:'붓 손글씨',       wts:[400]},
+  {f:'Yeon Sung',      n:'연성',         w:'부드러운 손글씨', wts:[400]},
+];
+const ENGLISH_FONTS = [
+  {f:'Montserrat',      n:'Montserrat',      w:'Modern sans',  wts:[400,700]},
+  {f:'Playfair Display',n:'Playfair Display',w:'Elegant serif',wts:[400,700]},
+  {f:'Oswald',          n:'Oswald',          w:'Condensed',    wts:[400,700]},
+  {f:'Lobster',         n:'Lobster',         w:'Script',       wts:[400]},
+  {f:'Pacifico',        n:'Pacifico',        w:'Brush script', wts:[400]},
+  {f:'Bebas Neue',      n:'Bebas Neue',      w:'Tall display', wts:[400]},
+  {f:'Roboto Slab',     n:'Roboto Slab',     w:'Slab serif',   wts:[400,700]},
+  {f:'Archivo Black',   n:'Archivo Black',   w:'Heavy',        wts:[400]},
+  {f:'Anton',           n:'Anton',           w:'Impact-like',  wts:[400]},
+  {f:'Caveat',          n:'Caveat',          w:'Handwriting',  wts:[400,700]},
+];
+const ALL_FONTS = [...KOREAN_FONTS, ...ENGLISH_FONTS];
+const FONT_MAP = Object.fromEntries(ALL_FONTS.map(f=>[f.f, f]));
+/* 폰트가 지원하는 가장 가까운 weight 반환 (없는 굵기 요청 시 faux bold 방지) */
+function safeWeight(fontFamily, want){
+  const info=FONT_MAP[fontFamily];
+  const wts=(info&&info.wts)||[400];
+  want = (want==='bold')?700 : (parseInt(want)||400);
+  if(wts.includes(want)) return want;
+  // 가장 가까운 실제 weight로 대체
+  return wts.reduce((a,b)=>Math.abs(b-want)<Math.abs(a-want)?b:a, wts[0]);
+}
+function fontHasBold(fontFamily){
+  const info=FONT_MAP[fontFamily];
+  return !!(info&&info.wts&&info.wts.includes(700));
+}
+
+/* ---------- 사이즈 프리셋 ----------
+   인쇄용은 mm 기준 종이규격, 웹용은 px 기준 */
+const PAPER_PRESETS = [  // 단위 mm (ISO A/B 시리즈 + 흔한 인쇄물)
+  {nm:'A0', w:841,  h:1189, grp:'paper'},
+  {nm:'A1', w:594,  h:841,  grp:'paper'},
+  {nm:'A2', w:420,  h:594,  grp:'paper'},
+  {nm:'A3', w:297,  h:420,  grp:'paper'},
+  {nm:'A4', w:210,  h:297,  grp:'paper'},
+  {nm:'A5', w:148,  h:210,  grp:'paper'},
+  {nm:'A6', w:105,  h:148,  grp:'paper'},
+  {nm:'B2', w:500,  h:707,  grp:'paper'},
+  {nm:'B3', w:353,  h:500,  grp:'paper'},
+  {nm:'B4', w:250,  h:353,  grp:'paper'},
+  {nm:'B5', w:176,  h:250,  grp:'paper'},
+  {nm:'명함', w:90,  h:54,  grp:'paper'},
+  {nm:'엽서', w:100, h:148,  grp:'paper'},
+  {nm:'전단(A4)', w:210, h:297, grp:'paper'},
+];
+const WEB_PRESETS = [    // 단위 px
+  {nm:'인스타 정사각', w:1080, h:1080, dim:'1080×1080'},
+  {nm:'인스타 스토리', w:1080, h:1920, dim:'1080×1920'},
+  {nm:'카드뉴스',      w:1080, h:1350, dim:'1080×1350'},
+  {nm:'유튜브 썸네일', w:1280, h:720,  dim:'1280×720'},
+  {nm:'페이스북',      w:1200, h:630,  dim:'1200×630'},
+  {nm:'프레젠테이션',  w:1280, h:720,  dim:'16:9'},
+];
+
+/* ---------- 단위 변환 ---------- */
+function mmToPx(mm, dpi){ return Math.round(mm * dpi / 25.4); }
+function pxToMm(px, dpi){ return +(px * 25.4 / dpi).toFixed(1); }
+
+/* ---------- 전역 상태 ---------- */
+const State = {
+  canvas: null,            // 현재 fabric.Canvas
+  pages: [],               // [{json, w, h, thumb}]
+  activePage: 0,
+  docW: 1080, docH: 1080,
+  dpi: 72,                 // 작업 dpi 표시값(내보내기 배율 계산용)
+  unit: 'px',              // 'px' | 'mm' (입력/표시 단위)
+  showCrop: false,         // 재단선(크롭마크) 표시 여부
+  bleedMm: 3,              // 재단 여백(mm)
+  zoom: 1,
+  docName: '제목 없는 디자인',
+  undoStack: [], redoStack: [],
+  isRestoring: false,
+  drawMode: false,
+  _currentId: null,        // 보관함 저장 id
+};
+
+/* ========================================================
+   멀티 문서(탭) 관리
+   Docs: 동시에 열어둔 문서들. 각 문서는 한 디자인(여러 페이지 포함).
+   탭 전환 = 현재 State를 활성 Doc에 저장하고, 다른 Doc을 State로 복원
+   ======================================================== */
+const Docs = {
+  list: [],        // [{tid, name, pages, activePage, docW, docH, dpi, unit, showCrop, bleedMm, _currentId}]
+  activeTid: null,
+};
+function newTid(){ return 't_'+Math.random().toString(36).slice(2,8); }
+
+/* 현재 State를 활성 Doc 객체에 써넣음 */
+function stashStateToActiveDoc(){
+  if(Docs.activeTid==null) return;
+  const d = Docs.list.find(x=>x.tid===Docs.activeTid);
+  if(!d) return;
+  snapshotCurrentPage();   // 현재 캔버스를 현재 페이지에 반영
+  d.name=State.docName; d.pages=State.pages; d.activePage=State.activePage;
+  d.docW=State.docW; d.docH=State.docH; d.dpi=State.dpi; d.unit=State.unit;
+  d.showCrop=State.showCrop; d.bleedMm=State.bleedMm; d._currentId=State._currentId;
+}
+/* Doc 객체를 State로 불러와 캔버스에 표시 */
+function loadDocToState(d){
+  State.docName=d.name; State.pages=d.pages; State.activePage=d.activePage||0;
+  State.docW=d.docW; State.docH=d.docH; State.dpi=d.dpi; State.unit=d.unit;
+  State.showCrop=d.showCrop; State.bleedMm=d.bleedMm; State._currentId=d._currentId||null;
+  State.undoStack=[]; State.redoStack=[];
+  $('#docName').value=State.docName;
+  loadPage(State.activePage);
+  setTimeout(()=>{ zoomFit(); renderPageBar(); drawCropMarks(); pushUndo(); }, 60);
+}
+/* 새 문서를 탭으로 추가 */
+function openDocAsTab(docObj){
+  const d = Object.assign({
+    tid:newTid(), name:'제목 없는 디자인',
+    pages:[{json:{version:'5.3.0',objects:[],background:'#ffffff'},w:1080,h:1080,thumb:null}],
+    activePage:0, docW:1080, docH:1080, dpi:72, unit:'px', showCrop:false, bleedMm:3, _currentId:null,
+  }, docObj||{});
+  if(Docs.list.length) stashStateToActiveDoc();
+  Docs.list.push(d);
+  Docs.activeTid=d.tid;
+  loadDocToState(d);
+  renderDocTabs();
+}
+/* 탭 전환 */
+function switchTab(tid){
+  if(tid===Docs.activeTid) return;
+  stashStateToActiveDoc();
+  Docs.activeTid=tid;
+  const d=Docs.list.find(x=>x.tid===tid);
+  if(d){ loadDocToState(d); renderDocTabs(); }
+}
+/* 탭 닫기 */
+function closeTab(tid){
+  const idx=Docs.list.findIndex(x=>x.tid===tid);
+  if(idx<0) return;
+  if(Docs.list.length<=1){ toast('마지막 편집창은 닫을 수 없어요','err'); return; }
+  if(tid===Docs.activeTid){
+    // 인접 탭으로 이동
+    const next=Docs.list[idx+1]||Docs.list[idx-1];
+    Docs.list.splice(idx,1);
+    Docs.activeTid=next.tid;
+    loadDocToState(next);
+  } else {
+    // 비활성 탭이면 현재 작업 보존하고 목록에서만 제거
+    stashStateToActiveDoc();
+    Docs.list.splice(idx,1);
+  }
+  renderDocTabs();
+}
+/* 상단 탭 바 렌더 */
+function renderDocTabs(){
+  const bar=$('#doctabs'); if(!bar) return;
+  // 활성 문서명 동기화
+  const act=Docs.list.find(x=>x.tid===Docs.activeTid);
+  if(act) act.name=State.docName;
+  bar.innerHTML='';
+  Docs.list.forEach(d=>{
+    const tab=document.createElement('div');
+    tab.className='doc-tab'+(d.tid===Docs.activeTid?' active':'');
+    const nm=(d.tid===Docs.activeTid)?State.docName:d.name;
+    tab.innerHTML=`<span class="dt-name">${nm||'무제'}</span><span class="dt-close" title="닫기">×</span>`;
+    tab.querySelector('.dt-name').onclick=()=>switchTab(d.tid);
+    tab.querySelector('.dt-close').onclick=(e)=>{e.stopPropagation();closeTab(d.tid);};
+    bar.appendChild(tab);
+  });
+  const add=document.createElement('button');
+  add.id='addDocTab'; add.className='doc-tab-add'; add.textContent='+'; add.title='새 편집창';
+  add.onclick=()=>openDocAsTab();
+  bar.appendChild(add);
+}
+
+/* ---------- 짧은 유틸 ---------- */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+function toast(msg, type){
+  const t=$('#toast'); t.textContent=msg; t.className='show '+(type||'');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.className='',2200);
+}
+function uid(){return Math.random().toString(36).slice(2,9);}
+
+/* ========================================================
+   캔버스 초기화
+   ======================================================== */
+function initCanvas(){
+  const el = $('#fcanvas');
+  State.canvas = new fabric.Canvas(el, {
+    backgroundColor:'#ffffff',
+    preserveObjectStacking:true,
+    selection:true,
+  });
+  resizeCanvasToDoc();
+
+  const c = State.canvas;
+  c.on('object:modified', ()=>{ pushUndo(); if(c.getActiveObject()) buildRightPanel(); });
+  c.on('object:added', e=>{ if(!State.isRestoring && !(e.target&&e.target._guide)) pushUndo(); });
+  c.on('object:removed', e=>{ if(!State.isRestoring && !(e.target&&e.target._guide)) pushUndo(); });
+  c.on('selection:created', onSelect);
+  c.on('selection:updated', onSelect);
+  c.on('selection:cleared', onDeselect);
+  c.on('mouse:dblclick', (e)=>{
+    const tgt=e.target;
+    // 표 그룹 안의 셀을 더블클릭하면 그 셀만 편집
+    if(tgt && tgt._table && e.subTargets && e.subTargets.length){
+      const cell=e.subTargets.find(o=>o._cell);
+      if(cell){ editTableCell(tgt, cell); return; }
+    }
+    // 프레임에 채워진 이미지를 더블클릭 → 안에서 크기 조절 모드
+    if(tgt && tgt._framed){
+      enterFrameZoomMode(tgt);
+    }
+  });
+  // 우클릭으로 프레임 이미지 빼기
+  setupFrameContextMenu();
+  // 드래그앤드롭으로 프레임에 이미지 채우기
+  setupFrameDragDrop();
+}
+
+/* 문서 크기에 맞춰 캔버스 픽셀 크기 + 줌 반영 */
+function resizeCanvasToDoc(){
+  const c = State.canvas;
+  c.setWidth(State.docW * State.zoom);
+  c.setHeight(State.docH * State.zoom);
+  c.setZoom(State.zoom);
+  $('#canvasWrap').style.width = (State.docW*State.zoom)+'px';
+  $('#canvasWrap').style.height = (State.docH*State.zoom)+'px';
+  drawCropMarks();
+  c.requestRenderAll();
+  $('#zoomVal').textContent = Math.round(State.zoom*100)+'%';
+}
+
+/* ========================================================
+   재단선 / 크롭마크 (인쇄용) — overlay 레이어에 그림
+   재단 여백(bleed)만큼 안쪽에 마감선, 모서리에 트림마크
+   ======================================================== */
+function drawCropMarks(){
+  const c = State.canvas;
+  if(!c) return;
+  if(!State.showCrop){ c.overlayImage=null; c.requestRenderAll(); return; }
+  c.overlayImage = buildCropGroup(State.docW, State.docH);
+  c.requestRenderAll();
+}
+
+/* ========================================================
+   줌
+   ======================================================== */
+function setZoom(z){
+  State.zoom = Math.min(4, Math.max(0.05, z));
+  resizeCanvasToDoc();
+}
+function zoomFit(){
+  const stage=$('#stage');
+  const pad=80;
+  const zw=(stage.clientWidth-pad)/State.docW;
+  const zh=(stage.clientHeight-pad)/State.docH;
+  setZoom(Math.min(zw,zh));
+}
+
+/* ========================================================
+   페이지(멀티 캔버스, 카드뉴스용)
+   ======================================================== */
+function snapshotCurrentPage(){
+  if(!State.canvas) return;
+  if(typeof clearGuides==='function') clearGuides();   // 가이드선 제외
+  State.pages[State.activePage] = {
+    json: State.canvas.toJSON(['selectable','id','name','_table','_tableModel','_frame','_frameD','_framed','_frameW','_frameH','_coverScale','_zoom','_cell','_cellBg','_r','_c']),
+    w: State.docW, h: State.docH,
+    thumb: State.canvas.toDataURL({format:'png', multiplier:0.15}),
+  };
+}
+function loadPage(idx){
+  const p = State.pages[idx];
+  if(!p) return;
+  State.isRestoring = true;
+  State.docW = p.w; State.docH = p.h;
+  State.canvas.loadFromJSON(p.json, ()=>{
+    if(!State.canvas.backgroundColor) State.canvas.backgroundColor = '#ffffff';
+    resizeCanvasToDoc();
+    State.canvas.requestRenderAll();
+    State.isRestoring = false;
+    renderPageBar();
+  });
+}
+function addPage(){
+  snapshotCurrentPage();
+  State.pages.push({
+    json:{version:'5.3.0',objects:[],background:'#ffffff'},
+    w:State.docW, h:State.docH, thumb:null
+  });
+  switchPage(State.pages.length-1);
+  setTimeout(()=>{const bar=$('#pagebar'); if(bar) bar.scrollLeft=bar.scrollWidth;},80);
+}
+/* 현재 페이지를 복제해 바로 뒤에 삽입 */
+function duplicatePage(idx){
+  snapshotCurrentPage();
+  const src = State.pages[idx!=null?idx:State.activePage];
+  if(!src) return;
+  const copy = {
+    json: JSON.parse(JSON.stringify(src.json)),  // 깊은 복사
+    w: src.w, h: src.h, thumb: src.thumb
+  };
+  const at = (idx!=null?idx:State.activePage)+1;
+  State.pages.splice(at, 0, copy);
+  State.activePage = at;
+  loadPage(at);
+  renderPageBar();
+  toast('페이지를 복사했습니다','ok');
+}
+function switchPage(idx){
+  if(idx===State.activePage) return;
+  snapshotCurrentPage();
+  State.activePage = idx;
+  loadPage(idx);
+}
+function deletePage(idx){
+  if(State.pages.length<=1){toast('최소 1개 페이지가 필요합니다','err'); return;}
+  State.pages.splice(idx,1);
+  if(State.activePage>=State.pages.length) State.activePage=State.pages.length-1;
+  loadPage(State.activePage);
+  renderPageBar();
+}
+function renderPageBar(){
+  const bar=$('#pagebar');
+  bar.querySelectorAll('.page-tab').forEach(e=>e.remove());
+  snapshotCurrentPage();
+  State.pages.forEach((p,i)=>{
+    const tab=document.createElement('button');
+    tab.className='page-tab'+(i===State.activePage?' active':'');
+    tab.textContent=(i+1);
+    if(p.thumb){tab.style.backgroundImage=`url(${p.thumb})`;tab.style.backgroundSize='cover';tab.textContent='';}
+    tab.onclick=()=>switchPage(i);
+    // 복사 버튼
+    const dup=document.createElement('span');
+    dup.className='pdup'; dup.textContent='⧉'; dup.title='이 페이지 복사';
+    dup.onclick=(e)=>{e.stopPropagation();duplicatePage(i);};
+    tab.appendChild(dup);
+    // 삭제 버튼
+    const del=document.createElement('span');
+    del.className='pdel'; del.textContent='×'; del.title='이 페이지 삭제';
+    del.onclick=(e)=>{e.stopPropagation();deletePage(i);};
+    tab.appendChild(del);
+    bar.insertBefore(tab, $('#addPage'));
+  });
+}
+
+
+/* ========================================================
+   Undo / Redo
+   ======================================================== */
+function pushUndo(){
+  if(State.isRestoring) return;
+  const snap = JSON.stringify(State.canvas.toJSON(['id','name']));
+  if(State.undoStack[State.undoStack.length-1]===snap) return;
+  State.undoStack.push(snap);
+  if(State.undoStack.length>60) State.undoStack.shift();
+  State.redoStack.length=0;
+}
+function doUndo(){
+  if(State.undoStack.length<2){toast('되돌릴 작업이 없습니다');return;}
+  State.redoStack.push(State.undoStack.pop());
+  const snap=State.undoStack[State.undoStack.length-1];
+  restoreSnap(snap);
+}
+function doRedo(){
+  if(!State.redoStack.length){toast('다시 실행할 작업이 없습니다');return;}
+  const snap=State.redoStack.pop();
+  State.undoStack.push(snap);
+  restoreSnap(snap);
+}
+function restoreSnap(snap){
+  State.isRestoring=true;
+  State.canvas.loadFromJSON(JSON.parse(snap),()=>{
+    State.canvas.requestRenderAll();
+    State.isRestoring=false;
+  });
+}
+
+/* ========================================================
+   폰트 안전 적용 — 실제 로드를 기다린 뒤 다시 그림
+   (구글폰트 비동기 로드 때문에 폰트가 일부만 적용되는 문제 해결)
+   ======================================================== */
+const _fontLoaded = {};
+function forceRetext(obj, c){
+  if(obj && obj.initDimensions) obj.initDimensions();
+  if(obj){ obj.set('dirty', true); obj.setCoords(); }
+  c.requestRenderAll();
+}
+function applyFontTo(obj, fontFamily, cb){
+  const c = State.canvas;
+  if(obj.isEditing && obj.exitEditing) obj.exitEditing();  // 편집 중이면 종료 후 적용
+  // 현재 굵기를 새 폰트가 지원하는 굵기로 보정 (faux bold 원천 차단)
+  const curWeight = obj.fontWeight || 400;
+  const wt = safeWeight(fontFamily, curWeight);
+  obj.set('fontFamily', fontFamily);
+  obj.set('fontWeight', wt);
+  c.requestRenderAll();
+  const sample = (obj.text||'') + '가나다라마ABC0123';  // 한글 subset까지 로드 유도
+  const finish = ()=>{
+    _fontLoaded[fontFamily] = true;
+    forceRetext(obj, c);
+    // 한글 subset이 늦게 붙는 경우 대비 재렌더
+    setTimeout(()=>forceRetext(obj, c), 120);
+    setTimeout(()=>forceRetext(obj, c), 450);
+    if(cb) cb();
+  };
+  if(document.fonts && document.fonts.load){
+    const wts=(FONT_MAP[fontFamily]&&FONT_MAP[fontFamily].wts)||[400];
+    const loads=[];
+    wts.forEach(w=>{
+      loads.push(document.fonts.load(`${w} 40px "${fontFamily}"`, sample)); // 실제 텍스트로 subset 로드
+      loads.push(document.fonts.load(`${w} 40px "${fontFamily}"`));         // 기본 subset
+    });
+    Promise.all(loads).then(finish).catch(finish);
+    if(document.fonts.ready) document.fonts.ready.then(()=>forceRetext(obj, c)); // 보험
+  } else {
+    finish();
+  }
+}
+/* 시작 시 모든 폰트를 미리 로드(첫 적용 지연 최소화) */
+function preloadAllFonts(){
+  if(!(document.fonts && document.fonts.load)) return;
+  try{
+    ALL_FONTS.forEach(f=>{
+      (f.wts||[400]).forEach(w=>{
+        document.fonts.load(`${w} 20px "${f.f}"`, '가나다라마바사아ABCabc0123');  // 한글 포함 미리 로드
+      });
+    });
+    document.fonts.ready.then(()=>{ if(State.canvas) State.canvas.requestRenderAll(); });
+  }catch(e){}
+}
+function addText(kind, pos){
+  const c=State.canvas;
+  const presets={
+    title:{text:'제목을 입력하세요', size:Math.round(State.docW*0.07), wantBold:true,  font:'Black Han Sans'},
+    sub:  {text:'부제목', size:Math.round(State.docW*0.045), wantBold:true,  font:'Noto Sans KR'},
+    body: {text:'본문 내용을 입력하세요.', size:Math.round(State.docW*0.028), wantBold:false, font:'Noto Sans KR'},
+  };
+  const p=presets[kind]||presets.body;
+  // 폰트가 700을 지원할 때만 bold, 아니면 그 폰트의 단일 weight (faux bold 방지)
+  const wt = safeWeight(p.font, p.wantBold?700:400);
+  const left = pos? pos.x : State.docW/2;
+  const top  = pos? pos.y : State.docH/2;
+  const t=new fabric.Textbox(p.text,{
+    left, top, originX:'center', originY:'center',
+    fontSize:p.size, fontFamily:p.font, fontWeight:wt,
+    fill:'#222222', textAlign:'center', width:State.docW*0.7, id:uid(),
+  });
+  c.add(t); c.setActiveObject(t); c.requestRenderAll();
+  // 폰트 로드 후 재측정(첫 표시 깨짐 방지) — 실제 weight 기준으로 로드
+  if(document.fonts&&document.fonts.load){
+    document.fonts.load(`${wt} 40px "${p.font}"`, p.text).then(()=>{
+      if(t.initDimensions) t.initDimensions(); t.set('dirty',true); c.requestRenderAll();
+    }).catch(()=>{});
+  }
+  t.enterEditing(); t.selectAll();
+}
+
+/* ========================================================
+   텍스트 배치 대기 모드 — 버튼 누른 뒤 캔버스 클릭한 위치에 생성
+   ======================================================== */
+const PlaceMode = { active:false, kind:null, handler:null };
+function startTextPlace(kind){
+  const c=State.canvas;
+  setDrawMode(false); stopLineMode();
+  cancelPlace();
+  PlaceMode.active=true; PlaceMode.kind=kind;
+  c.defaultCursor='text'; c.selection=false;
+  c.discardActiveObject(); c.requestRenderAll();
+  toast('캔버스를 클릭해 텍스트를 놓으세요');
+  const onDown=(e)=>{
+    const p=c.getPointer(e.e);
+    cancelPlace();
+    addText(kind, {x:p.x, y:p.y});
+  };
+  c.on('mouse:down', onDown);
+  PlaceMode.handler=onDown;
+}
+function cancelPlace(){
+  const c=State.canvas; if(!c) return;
+  if(PlaceMode.handler) c.off('mouse:down', PlaceMode.handler);
+  PlaceMode.active=false; PlaceMode.kind=null; PlaceMode.handler=null;
+  c.defaultCursor='default'; c.selection=true;
+}
+
+/* ========================================================
+   객체 추가 — 도형 (기본 프리미티브)
+   ======================================================== */
+function addShape(type){
+  const c=State.canvas;
+  const cx=State.docW/2, cy=State.docH/2;
+  const s=Math.min(State.docW,State.docH)*0.3;
+  let o;
+  const base={left:cx, top:cy, originX:'center', originY:'center', fill:'#4c8dff', id:uid()};
+  switch(type){
+    case 'rect': o=new fabric.Rect({...base, width:s, height:s}); break;
+    case 'roundrect': o=new fabric.Rect({...base, width:s, height:s, rx:s*0.15, ry:s*0.15}); break;
+    case 'circle': o=new fabric.Circle({...base, radius:s/2}); break;
+    case 'ellipse': o=new fabric.Ellipse({...base, rx:s/2, ry:s/3}); break;
+    case 'triangle': o=new fabric.Triangle({...base, width:s, height:s}); break;
+    case 'line': o=new fabric.Line([cx-s/2,cy,cx+s/2,cy],{stroke:'#222',strokeWidth:6,id:uid(),originX:'center',originY:'center'}); break;
+    default: return;
+  }
+  if(o){c.add(o); c.setActiveObject(o); c.requestRenderAll();}
+}
+
+/* ========================================================
+   객체 추가 — SVG path 도형/아이콘 (라이브러리)
+   spec: {n, d, f(채움 여부, 기본 true), s(테두리 여부), dash}
+   ======================================================== */
+function addPathShape(spec, asIcon){
+  const c=State.canvas;
+  const target=Math.min(State.docW,State.docH)*0.3;  // 목표 크기
+  const scale=target/100;                            // path는 100x100 기준
+  const filled = (spec.f!==false) && !asIcon ? true : (spec.f===true);
+  const opt={
+    left:State.docW/2, top:State.docH/2, originX:'center', originY:'center',
+    scaleX:scale, scaleY:scale, id:uid(),
+    strokeLineJoin:'round', strokeLineCap:'round',
+  };
+  if(asIcon || spec.s){
+    // 아이콘/선 도형: 테두리 위주
+    opt.fill = filled ? (asIcon?'#333333':'#4c8dff') : '';
+    opt.stroke = '#333333';
+    opt.strokeWidth = filled ? 0 : 6;
+    if(spec.dash) opt.strokeDashArray=[8,6];
+  } else {
+    // 채움 도형
+    opt.fill = '#4c8dff';
+    opt.stroke = '';
+    opt.strokeWidth = 0;
+  }
+  const p=new fabric.Path(spec.d, opt);
+  c.add(p); c.setActiveObject(p); c.requestRenderAll();
+}
+
+/* ========================================================
+   객체 추가 — 이모지 (텍스트로 추가)
+   ======================================================== */
+function addEmoji(ch){
+  const c=State.canvas;
+  const t=new fabric.Text(ch,{
+    left:State.docW/2, top:State.docH/2, originX:'center', originY:'center',
+    fontSize:Math.min(State.docW,State.docH)*0.2, id:uid(),
+    fontFamily:'"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif',
+  });
+  c.add(t); c.setActiveObject(t); c.requestRenderAll();
+}
+
+/* ========================================================
+   표 — 데이터 모델 기반. 모델(rows/cols/cells/색상)을 그룹으로 렌더.
+   그룹의 _tableModel에 상태를 저장하고, 편집 시 다시 그림.
+   ======================================================== */
+function makeTableModel(rows, cols){
+  const cells=[];
+  for(let r=0;r<rows;r++){
+    const row=[];
+    for(let cc=0;cc<cols;cc++) row.push({ text:(r===0?'제목':'내용') });
+    cells.push(row);
+  }
+  return {
+    rows, cols, cells,
+    headerFill:'#4c8dff', headerText:'#ffffff',
+    bodyFill:'#ffffff',   bodyText:'#333333',
+    lineColor:'#cccccc',  lineWidth:2,
+    headerBold:true,
+    cellW:Math.min(State.docW*0.8,900)/cols,
+    cellH:Math.max(40, Math.round(State.docW*0.05)),
+    fontFamily:'Noto Sans KR',
+  };
+}
+function buildTableGroup(m, placeAt){
+  const tableW=m.cellW*m.cols, tableH=m.cellH*m.rows;
+  const fontSize=Math.max(12, Math.round(m.cellH*0.38));
+  const items=[];
+  // 셀 배경(헤더/바디 색)
+  for(let r=0;r<m.rows;r++){
+    for(let cc=0;cc<m.cols;cc++){
+      const isH=(r===0);
+      items.push(new fabric.Rect({
+        left:cc*m.cellW, top:r*m.cellH, width:m.cellW, height:m.cellH,
+        fill:isH?m.headerFill:m.bodyFill, stroke:'', selectable:false, _cellBg:true, _r:r, _c:cc,
+      }));
+    }
+  }
+  // 격자선
+  for(let r=0;r<=m.rows;r++) items.push(new fabric.Line([0,r*m.cellH,tableW,r*m.cellH],{stroke:m.lineColor,strokeWidth:m.lineWidth,selectable:false}));
+  for(let cc=0;cc<=m.cols;cc++) items.push(new fabric.Line([cc*m.cellW,0,cc*m.cellW,tableH],{stroke:m.lineColor,strokeWidth:m.lineWidth,selectable:false}));
+  // 셀 텍스트
+  for(let r=0;r<m.rows;r++){
+    for(let cc=0;cc<m.cols;cc++){
+      const isH=(r===0);
+      items.push(new fabric.Textbox(m.cells[r][cc].text||'',{
+        left:cc*m.cellW+m.cellW/2, top:r*m.cellH+m.cellH/2, originX:'center', originY:'center',
+        width:m.cellW-16, fontSize, fontFamily:m.fontFamily,
+        fontWeight:(isH&&m.headerBold)?700:400, fill:isH?m.headerText:m.bodyText,
+        textAlign:'center', _cell:true, _r:r, _c:cc,
+      }));
+    }
+  }
+  const grp=new fabric.Group(items,{
+    originX:'center', originY:'center', id:uid(),
+    _table:true, _tableModel:m, subTargetCheck:true,
+  });
+  if(placeAt){ grp.set({left:placeAt.left, top:placeAt.top, angle:placeAt.angle||0, scaleX:placeAt.scaleX||1, scaleY:placeAt.scaleY||1}); }
+  else { grp.set({left:State.docW/2, top:State.docH/2}); }
+  return grp;
+}
+function addTable(rows, cols){
+  const c=State.canvas;
+  rows=Math.max(1,Math.min(30,rows||3));
+  cols=Math.max(1,Math.min(12,cols||3));
+  const m=makeTableModel(rows, cols);
+  const grp=buildTableGroup(m);
+  c.add(grp); c.setActiveObject(grp); c.requestRenderAll();
+  pushUndo();
+  toast(`${rows}×${cols} 표를 추가했습니다`,'ok');
+}
+/* 모델 변경 후 그룹을 새로 그려 교체 (위치/크기 유지) */
+function rerenderTable(group){
+  const c=State.canvas;
+  const m=group._tableModel;
+  const placeAt={left:group.left, top:group.top, angle:group.angle, scaleX:group.scaleX, scaleY:group.scaleY};
+  const ng=buildTableGroup(m, placeAt);
+  c.remove(group); c.add(ng); c.setActiveObject(ng); c.requestRenderAll();
+  pushUndo();
+  if(typeof buildRightPanel==='function') buildRightPanel();
+  return ng;
+}
+/* 행/열 추가·삭제 */
+function tableAddRow(group, at){
+  const m=group._tableModel;
+  const row=[]; for(let cc=0;cc<m.cols;cc++) row.push({text:'내용'});
+  const idx=(at==null)?m.rows:at;
+  m.cells.splice(idx,0,row); m.rows++;
+  return rerenderTable(group);
+}
+function tableDelRow(group, at){
+  const m=group._tableModel;
+  if(m.rows<=1){toast('행이 1개뿐입니다','err');return group;}
+  const idx=(at==null)?m.rows-1:at;
+  m.cells.splice(idx,1); m.rows--;
+  return rerenderTable(group);
+}
+function tableAddCol(group, at){
+  const m=group._tableModel;
+  const idx=(at==null)?m.cols:at;
+  m.cells.forEach((row,r)=>row.splice(idx,0,{text:r===0?'제목':'내용'}));
+  m.cols++;
+  m.cellW=Math.min(State.docW*0.8,900)/m.cols;  // 폭 재분배
+  return rerenderTable(group);
+}
+function tableDelCol(group, at){
+  const m=group._tableModel;
+  if(m.cols<=1){toast('열이 1개뿐입니다','err');return group;}
+  const idx=(at==null)?m.cols-1:at;
+  m.cells.forEach(row=>row.splice(idx,1)); m.cols--;
+  m.cellW=Math.min(State.docW*0.8,900)/m.cols;
+  return rerenderTable(group);
+}
+
+/* 표 셀 편집 — 더블클릭한 셀 내용 수정 */
+function editTableCell(group, cell){
+  const m=group._tableModel; if(!m) return;
+  const r=cell._r, cc=cell._c;
+  const cur=(m.cells[r]&&m.cells[r][cc])?m.cells[r][cc].text:'';
+  const val=window.prompt('셀 내용 입력', cur);
+  if(val!==null){
+    m.cells[r][cc].text=val;
+    rerenderTable(group);
+  }
+}
+
+/* ========================================================
+   이미지 기본 편집 — 필터 적용
+   ======================================================== */
+function applyImageFilters(img, opts){
+  const f=fabric.Image.filters;
+  const filters=[];
+  if(opts.brightness) filters.push(new f.Brightness({brightness:opts.brightness}));
+  if(opts.contrast)   filters.push(new f.Contrast({contrast:opts.contrast}));
+  if(opts.saturation) filters.push(new f.Saturation({saturation:opts.saturation}));
+  if(opts.blur)       filters.push(new f.Blur({blur:opts.blur}));
+  if(opts.grayscale)  filters.push(new f.Grayscale());
+  if(opts.invert)     filters.push(new f.Invert());
+  if(opts.sepia)      filters.push(new f.Sepia());
+  img.filters=filters;
+  img.applyFilters();
+  State.canvas.requestRenderAll();
+}
+/* 이미지의 현재 필터 값 읽기 (UI 초기화용) */
+function readImageFilters(img){
+  const o={brightness:0,contrast:0,saturation:0,blur:0,
+    grayscale:!!img._grayscale, invert:!!img._invert, sepia:!!img._sepia};
+  (img.filters||[]).forEach(fl=>{
+    if(fl.brightness!=null) o.brightness=fl.brightness;
+    if(fl.contrast!=null) o.contrast=fl.contrast;
+    if(fl.saturation!=null) o.saturation=fl.saturation;
+    if(fl.blur!=null) o.blur=fl.blur;
+  });
+  return o;
+}
+
+/* ========================================================
+   이미지 프레임 (자리틀) — path 기반 모양 안에 이미지 채우기
+   ======================================================== */
+/* path(100x100) 기반 프레임 객체 생성 */
+function makeFramePath(d, opt){
+  return new fabric.Path(d, Object.assign({
+    originX:'center', originY:'center',
+    objectCaching:false,
+  }, opt||{}));
+}
+function addFrame(frameIndex){
+  const c=State.canvas;
+  const spec = FRAMES[frameIndex] || FRAMES[0];
+  const target = Math.min(State.docW,State.docH)*0.4;  // 화면상 목표 크기
+  const scale = target/100;  // path는 100x100 기준
+  const frame = makeFramePath(spec.d, {
+    left:State.docW/2, top:State.docH/2,
+    scaleX:scale, scaleY:scale,
+    fill:'#e3e6ee', stroke:'#9aa0ad', strokeWidth:2, strokeDashArray:[8,6],
+    id:uid(), _frame:true, _frameD:spec.d,
+  });
+  c.add(frame); c.setActiveObject(frame); c.requestRenderAll();
+  toast(`'${spec.n}' 프레임 추가. 이미지를 채워보세요`,'ok');
+}
+
+/* 선택된 프레임에 이미지 채우기 (file 또는 dataURL 모두 허용) */
+function fillFrameWithImage(frame, fileOrUrl){
+  const c=State.canvas;
+  const place=(dataUrl)=>{
+    fabric.Image.fromURL(dataUrl, img=>{
+      if(!img){ toast('이미지를 읽지 못했습니다','err'); return; }
+      const fw=frame.getScaledWidth(), fh=frame.getScaledHeight();
+      const cx=frame.left, cy=frame.top, angle=frame.angle||0;
+      const frameD = frame._frameD || 'M5 5 H95 V95 H5 Z';
+      // cover: 프레임을 완전히 덮는 최소 배율
+      const coverScale=Math.max(fw/img.width, fh/img.height);
+      const clip=buildFrameClip(frameD, fw, fh, coverScale);
+      img.set({
+        left:cx, top:cy, originX:'center', originY:'center',
+        scaleX:coverScale, scaleY:coverScale, angle, id:uid(),
+        _framed:true, _frameD:frameD,
+        _frameW:fw, _frameH:fh,           // 프레임 화면 크기 보존 (빼기/크기조절용)
+        _coverScale:coverScale,           // 프레임을 막 덮는 기준 배율
+        _zoom:1,                          // 사용자가 키운 배율(1=딱 맞음)
+        clipPath: clip,
+      });
+      c.remove(frame);
+      c.add(img); c.setActiveObject(img); c.requestRenderAll();
+      pushUndo();
+      toast('이미지를 프레임에 넣었습니다 · 더블클릭으로 크기 조절, 우클릭으로 빼기','ok');
+    }, {crossOrigin:'anonymous'});
+  };
+  if(typeof fileOrUrl==='string'){ place(fileOrUrl); }
+  else { const reader=new FileReader(); reader.onload=ev=>place(ev.target.result); reader.readAsDataURL(fileOrUrl); }
+}
+/* 클립 패스 생성 — 이미지 배율(zoom 포함)에 맞춰 화면상 프레임 크기가 fw×fh 되도록 */
+function buildFrameClip(frameD, fw, fh, imgScale){
+  const clipW=fw/imgScale, clipH=fh/imgScale;   // 이미지 원본픽셀 기준 프레임 크기
+  const clip=new fabric.Path(frameD, {
+    originX:'center', originY:'center',
+    scaleX:clipW/100, scaleY:clipH/100,
+  });
+  clip.set({left:0, top:0});
+  clip.setCoords && clip.setCoords();
+  return clip;
+}
+
+/* 프레임 안 이미지의 확대/축소 (틀은 고정, 사진만 키우거나 줄임) */
+function setFrameImageZoom(img, zoom){
+  zoom=Math.max(1, Math.min(4, zoom));   // 1배(딱맞음)~4배. 1 미만은 틈이 생기므로 막음
+  img._zoom=zoom;
+  const newScale=img._coverScale*zoom;
+  img.set({scaleX:newScale, scaleY:newScale});
+  // 클립을 새 배율에 맞춰 다시 만들어 화면상 프레임 크기를 유지
+  img.clipPath=buildFrameClip(img._frameD, img._frameW, img._frameH, newScale);
+  img.set('dirty', true);
+  State.canvas.requestRenderAll();
+}
+
+/* 프레임에서 이미지 빼기 — 빈 프레임으로 되돌림 */
+function unfillFrame(img){
+  const c=State.canvas;
+  const frameD=img._frameD, fw=img._frameW, fh=img._frameH;
+  const scale=(fw||100)/100;
+  const frame=makeFramePath(frameD, {
+    left:img.left, top:img.top, angle:img.angle||0,
+    scaleX:scale, scaleY:scale,
+    fill:'#e3e6ee', stroke:'#9aa0ad', strokeWidth:2, strokeDashArray:[8,6],
+    id:uid(), _frame:true, _frameD:frameD,
+  });
+  c.remove(img); c.add(frame); c.setActiveObject(frame); c.requestRenderAll();
+  pushUndo();
+  toast('이미지를 뺐습니다 (빈 프레임)','ok');
+}
+
+/* 우클릭 → 프레임 이미지 빼기 컨텍스트 메뉴 */
+function setupFrameContextMenu(){
+  const c=State.canvas;
+  const upper=c.upperCanvasEl;
+  if(!upper) return;
+  upper.addEventListener('contextmenu', (ev)=>{
+    const p=c.getPointer(ev);
+    const tgt=c.findTarget(ev, false);
+    if(tgt && tgt._framed){
+      ev.preventDefault();
+      // 작은 메뉴: 이미지 빼기 / 닫기
+      showFrameMenu(ev.clientX, ev.clientY, tgt);
+    }
+    // 프레임 이미지가 아니면 기본 우클릭 동작 유지
+  });
+}
+function showFrameMenu(x, y, img){
+  closeFrameMenu();
+  const menu=document.createElement('div');
+  menu.id='frameMenu';
+  menu.style.cssText=`position:fixed;left:${x}px;top:${y}px;z-index:300;background:var(--panel);
+    border:1px solid var(--line);border-radius:8px;padding:5px;box-shadow:0 6px 24px rgba(0,0,0,.4);font-size:13px;min-width:140px;`;
+  menu.innerHTML=`
+    <button class="fm-item" data-act="unfill">🗑 이미지 빼기</button>
+    <button class="fm-item" data-act="zoom">🔍 크기 조절</button>`;
+  menu.querySelectorAll('.fm-item').forEach(b=>{
+    b.style.cssText='display:block;width:100%;text-align:left;padding:8px 12px;border-radius:5px;color:var(--txt);background:none;font-size:13px;';
+    b.onmouseenter=()=>b.style.background='var(--panel2)';
+    b.onmouseleave=()=>b.style.background='none';
+    b.onclick=()=>{
+      const act=b.dataset.act;
+      if(act==='unfill') unfillFrame(img);
+      else if(act==='zoom') enterFrameZoomMode(img);
+      closeFrameMenu();
+    };
+  });
+  document.body.appendChild(menu);
+  setTimeout(()=>document.addEventListener('mousedown', closeFrameMenu, {once:true}),0);
+}
+function closeFrameMenu(){ const m=document.getElementById('frameMenu'); if(m) m.remove(); }
+
+/* 드래그앤드롭 → 떨어뜨린 위치의 프레임에 이미지 채우기 */
+function setupFrameDragDrop(){
+  const c=State.canvas;
+  const upper=c.upperCanvasEl;
+  const stage=document.getElementById('stage');
+  if(!upper||!stage) return;
+  // 전역: 캔버스 밖에 떨어뜨려도 브라우저가 이미지를 새 탭에서 열지 않도록 차단
+  if(!window._dndGuard){
+    window._dndGuard=true;
+    window.addEventListener('dragover', e=>{ if(e.dataTransfer&&Array.from(e.dataTransfer.types||[]).includes('Files')) e.preventDefault(); });
+    window.addEventListener('drop', e=>{ if(e.dataTransfer&&Array.from(e.dataTransfer.types||[]).includes('Files')) e.preventDefault(); });
+  }
+  const over=(e)=>{ if(e.dataTransfer && Array.from(e.dataTransfer.types||[]).includes('Files')){ e.preventDefault(); e.dataTransfer.dropEffect='copy'; } };
+  stage.addEventListener('dragover', over);
+  stage.addEventListener('drop', (e)=>{
+    const files=e.dataTransfer && e.dataTransfer.files;
+    if(!files || !files.length) return;
+    const file=files[0];
+    if(!/^image\//.test(file.type)) return;
+    e.preventDefault();
+    const rect=upper.getBoundingClientRect();
+    const px=(e.clientX-rect.left)/State.zoom;
+    const py=(e.clientY-rect.top)/State.zoom;
+    const frame=findFrameAt(px, py);
+    if(frame){ fillFrameWithImage(frame, file); }
+    else { addImageFromFile(file); }
+  });
+}
+/* 캔버스 좌표(px,py)에 있는 빈 프레임 찾기 */
+function findFrameAt(px, py){
+  const objs=State.canvas.getObjects();
+  for(let i=objs.length-1;i>=0;i--){   // 위에 있는 것 우선
+    const o=objs[i];
+    if(o._frame){
+      const b=o.getBoundingRect(true,true);
+      if(px>=b.left && px<=b.left+b.width && py>=b.top && py<=b.top+b.height) return o;
+    }
+  }
+  return null;
+}
+
+/* 프레임 이미지 크기 조절 모드 — 화면에 슬라이더 띄움 */
+function enterFrameZoomMode(img){
+  State.canvas.setActiveObject(img);
+  buildRightPanel();   // 우측에 크기조절 슬라이더 표시(아래 buildRightPanel에서 처리)
+  toast('프레임 안 사진 크기를 오른쪽 슬라이더로 조절하세요','ok');
+}
+
+/* ========================================================
+   객체 추가 — 이미지 (기본 편집 기능 포함)
+   ======================================================== */
+function addImageFromFile(file){
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    fabric.Image.fromURL(ev.target.result,img=>{
+      const max=State.docW*0.6;
+      if(img.width>max) img.scaleToWidth(max);
+      img.set({left:State.docW/2, top:State.docH/2, originX:'center', originY:'center', id:uid()});
+      State.canvas.add(img); State.canvas.setActiveObject(img); State.canvas.requestRenderAll();
+    },{crossOrigin:'anonymous'});
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ========================================================
+   자유 그리기 (브러시) — 점선 옵션 포함
+   ======================================================== */
+function setDrawMode(on, opts){
+  const c=State.canvas;
+  State.drawMode=on;
+  c.isDrawingMode=on;
+  // 다른 드래그 그리기 모드는 끔
+  stopLineMode();
+  if(on){
+    c.freeDrawingBrush = new fabric.PencilBrush(c);
+    c.freeDrawingBrush.color = (opts&&opts.color)||'#222222';
+    c.freeDrawingBrush.width = (opts&&opts.width)||5;
+    c.freeDrawingBrush.strokeDashArray = (opts&&opts.dash)? [(opts.width||5)*2.5, (opts.width||5)*2] : null;
+  }
+}
+
+/* ========================================================
+   선 / 곡선 드래그 그리기
+   mode: 'line'(직선) | 'curve'(곡선) | 'dashed'(점선 직선)
+   ======================================================== */
+const LineDraw = { active:false, mode:null, obj:null, start:null, opts:null, handlers:null };
+
+function startLineMode(mode, opts){
+  const c=State.canvas;
+  setDrawMode(false);                 // 펜 모드 끔
+  stopLineMode();
+  c.isDrawingMode=false;
+  c.selection=false;
+  c.discardActiveObject(); c.requestRenderAll();
+  c.defaultCursor='crosshair';
+  LineDraw.active=true; LineDraw.mode=mode; LineDraw.opts=opts||{};
+
+  const down=(e)=>{
+    const p=c.getPointer(e.e);
+    LineDraw.start={x:p.x,y:p.y};
+    const o={
+      stroke: LineDraw.opts.color||'#222222',
+      strokeWidth: LineDraw.opts.width||5,
+      fill:'', selectable:true, id:uid(),
+      strokeLineCap:'round', strokeLineJoin:'round',
+      strokeDashArray: (mode==='dashed'||LineDraw.opts.dash)? [(LineDraw.opts.width||5)*2.5,(LineDraw.opts.width||5)*2] : null,
+    };
+    if(mode==='curve'){
+      LineDraw.obj=new fabric.Path(`M ${p.x} ${p.y} Q ${p.x} ${p.y} ${p.x} ${p.y}`, o);
+    }else{
+      LineDraw.obj=new fabric.Line([p.x,p.y,p.x,p.y], o);
+    }
+    c.add(LineDraw.obj);
+  };
+  const move=(e)=>{
+    if(!LineDraw.obj||!LineDraw.start) return;
+    const p=c.getPointer(e.e);
+    if(LineDraw.mode==='curve'){
+      const sx=LineDraw.start.x, sy=LineDraw.start.y;
+      // 중간 제어점을 수직으로 띄워 부드러운 곡선
+      const mx=(sx+p.x)/2, my=(sy+p.y)/2;
+      const dx=p.x-sx, dy=p.y-sy;
+      const cxp=mx - dy*0.4, cyp=my + dx*0.4;
+      LineDraw.obj.set({path:[['M',sx,sy],['Q',cxp,cyp,p.x,p.y]]});
+      LineDraw.obj.set('dirty',true);
+    }else{
+      LineDraw.obj.set({x2:p.x, y2:p.y});
+    }
+    c.requestRenderAll();
+  };
+  const up=()=>{
+    if(LineDraw.obj){
+      // 너무 짧으면 취소
+      const o=LineDraw.obj;
+      let len=10;
+      if(o.type==='line') len=Math.hypot(o.x2-o.x1,o.y2-o.y1);
+      if(len<3){ c.remove(o); }
+      else{ c.setActiveObject(o); pushUndo(); }
+    }
+    LineDraw.obj=null; LineDraw.start=null;
+    // 한 번 그리면 선택모드로 복귀(연속 그리려면 패널에서 다시 누름)
+    stopLineMode();
+  };
+  c.on('mouse:down', down);
+  c.on('mouse:move', move);
+  c.on('mouse:up', up);
+  LineDraw.handlers={down,move,up};
+}
+function stopLineMode(){
+  const c=State.canvas; if(!c) return;
+  if(LineDraw.handlers){
+    c.off('mouse:down', LineDraw.handlers.down);
+    c.off('mouse:move', LineDraw.handlers.move);
+    c.off('mouse:up', LineDraw.handlers.up);
+  }
+  LineDraw.active=false; LineDraw.mode=null; LineDraw.obj=null; LineDraw.start=null; LineDraw.handlers=null;
+  c.selection=true; c.defaultCursor='default';
+}
+
+/* ========================================================
+   스마트 가이드 + 스냅
+   드래그 시 캔버스 중심선, 다른 개체의 가장자리/중심에 정렬되면
+   가이드선을 표시하고 살짝 달라붙게 함
+   ======================================================== */
+const Snap = { enabled:true, threshold:7, lines:[] };
+
+function clearGuides(){
+  const c=State.canvas;
+  Snap.lines.forEach(l=>c.remove(l));
+  Snap.lines=[];
+}
+function drawGuide(x1,y1,x2,y2){
+  const c=State.canvas;
+  const ln=new fabric.Line([x1,y1,x2,y2],{
+    stroke:'#ff2d9b', strokeWidth:1/State.zoom, selectable:false, evented:false,
+    excludeFromExport:true, _guide:true,
+  });
+  c.add(ln); ln.bringToFront(); Snap.lines.push(ln);
+}
+function setupSnap(){
+  const c=State.canvas;
+  c.on('object:moving', e=>{
+    if(!Snap.enabled) return;
+    const o=e.target;
+    clearGuides();
+    const th=Snap.threshold/State.zoom;
+    const W=State.docW, H=State.docH;
+    const b=o.getBoundingRect(true,true);
+    const oc={l:b.left, r:b.left+b.width, cx:b.left+b.width/2, t:b.top, bt:b.top+b.height, cy:b.top+b.height/2};
+
+    // 스냅 후보: 캔버스 기준 (중심/가장자리)
+    const vTargets=[{p:W/2,type:'cx'},{p:0,type:'l'},{p:W,type:'r'}];
+    const hTargets=[{p:H/2,type:'cy'},{p:0,type:'t'},{p:H,type:'bt'}];
+
+    // 다른 개체들의 가장자리/중심도 후보에 추가
+    c.getObjects().forEach(other=>{
+      if(other===o||other._guide) return;
+      const ob=other.getBoundingRect(true,true);
+      vTargets.push({p:ob.left,type:'edge'},{p:ob.left+ob.width,type:'edge'},{p:ob.left+ob.width/2,type:'edge'});
+      hTargets.push({p:ob.top,type:'edge'},{p:ob.top+ob.height,type:'edge'},{p:ob.top+ob.height/2,type:'edge'});
+    });
+
+    let snapped=false;
+    // 세로 정렬(좌우 위치): 개체의 left/center/right 를 각 후보에 맞춤
+    for(const t of vTargets){
+      for(const [edge,val] of [['l',oc.l],['cx',oc.cx],['r',oc.r]]){
+        if(Math.abs(val-t.p)<th){
+          const dx=t.p-val; o.left+=dx; o.setCoords();
+          drawGuide(t.p,0,t.p,H); snapped=true; break;
+        }
+      }
+      if(snapped) break;
+    }
+    snapped=false;
+    for(const t of hTargets){
+      for(const [edge,val] of [['t',oc.t],['cy',oc.cy],['bt',oc.bt]]){
+        if(Math.abs(val-t.p)<th){
+          const dy=t.p-val; o.top+=dy; o.setCoords();
+          drawGuide(0,t.p,W,t.p); snapped=true; break;
+        }
+      }
+      if(snapped) break;
+    }
+  });
+  c.on('object:modified', clearGuides);
+  c.on('mouse:up', clearGuides);
+  c.on('selection:cleared', clearGuides);
+}
+function deleteActive(){
+  const c=State.canvas;
+  const objs=c.getActiveObjects();
+  objs.forEach(o=>c.remove(o));
+  c.discardActiveObject(); c.requestRenderAll();
+}
+function duplicateActive(){
+  const c=State.canvas; const a=c.getActiveObject(); if(!a)return;
+  a.clone(cl=>{
+    cl.set({left:a.left+24, top:a.top+24, id:uid()});
+    c.add(cl); c.setActiveObject(cl); c.requestRenderAll();
+  });
+}
+function bringFwd(){const a=State.canvas.getActiveObject();if(a){State.canvas.bringForward(a);State.canvas.requestRenderAll();pushUndo();}}
+function sendBack(){const a=State.canvas.getActiveObject();if(a){State.canvas.sendBackwards(a);State.canvas.requestRenderAll();pushUndo();}}
+function bringFront(){const a=State.canvas.getActiveObject();if(a){State.canvas.bringToFront(a);State.canvas.requestRenderAll();pushUndo();}}
+function sendBottom(){const a=State.canvas.getActiveObject();if(a){State.canvas.sendToBack(a);State.canvas.requestRenderAll();pushUndo();}}
+function groupActive(){
+  const c=State.canvas; const sel=c.getActiveObject();
+  if(sel && sel.type==='activeSelection'){ sel.toGroup(); c.requestRenderAll(); pushUndo(); }
+}
+function ungroupActive(){
+  const c=State.canvas; const sel=c.getActiveObject();
+  if(sel && sel.type==='group'){ sel.toActiveSelection(); c.requestRenderAll(); pushUndo(); }
+}
+function alignActive(dir){
+  const c=State.canvas; const a=c.getActiveObject(); if(!a)return;
+  const W=State.docW,H=State.docH; const b=a.getBoundingRect(true,true);
+  switch(dir){
+    case 'left':   a.set({left:a.left-b.left}); break;
+    case 'centerX':a.set({left:a.left+(W/2-(b.left+b.width/2))}); break;
+    case 'right':  a.set({left:a.left+(W-(b.left+b.width))}); break;
+    case 'top':    a.set({top:a.top-b.top}); break;
+    case 'centerY':a.set({top:a.top+(H/2-(b.top+b.height/2))}); break;
+    case 'bottom': a.set({top:a.top+(H-(b.top+b.height))}); break;
+  }
+  a.setCoords(); c.requestRenderAll(); pushUndo();
+}
+
+
+/* ========================================================
+   좌측 패널 렌더링
+   ======================================================== */
+const EMOJI_SETS = {
+  '표정':['😀','😁','😂','🤣','😊','😍','😎','🤩','😭','😡','🥰','😴','🤔','😅','😇','🙄','😱','🥳','😏','😬'],
+  '손/제스처':['👍','👎','👏','🙌','🙏','✌️','🤝','👋','💪','✊','👌','🤙','☝️','👇','👀','🫶','🤞','✍️'],
+  '하트':['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💖','💗','💓','💕','💞','💔','❣️','💟','💌','💋'],
+  '사물':['⭐','🔥','💡','🎉','🎁','🏆','📌','📎','✏️','📖','💰','🛒','📱','💻','⏰','🔔','🎯','🚀','💎','🔑'],
+  '자연':['🌸','🌺','🌻','🌹','🌈','☀️','⛅','🌙','⚡','❄️','🌊','🍀','🌴','🌵','🍎','🍓','🍕','🍔','☕','🍺'],
+  '기호':['✅','❌','❗','❓','➕','➖','✔️','✖️','💯','🆗','🆕','🔴','🟠','🟡','🟢','🔵','⚫','⚪','🟣','🟤'],
+};
+
+/* 라이브러리 개수 */
+function countLib(lib){let n=0;for(const k in lib)n+=lib[k].length;return n;}
+/* 패널 버튼용 미리보기 SVG */
+function svgIcon(sp, asIcon){
+  const filled=(sp.f!==false)&&!asIcon ? true : (sp.f===true);
+  const fill = filled ? (asIcon?'#cfd1da':'#cfd1da') : 'none';
+  const stroke = (filled && !asIcon && !sp.s) ? 'none' : '#cfd1da';
+  const sw = (filled && !asIcon && !sp.s) ? 0 : 6;
+  const dash = sp.dash ? 'stroke-dasharray="8 6"' : '';
+  return `<svg viewBox="0 0 100 100" width="26" height="26"><path d="${sp.d}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" ${dash}/></svg>`;
+}
+
+function renderPanel(name){
+  const sp=$('#sidepanel');
+  sp.classList.remove('collapsed');
+  let html='';
+  switch(name){
+    case 'size':
+      const isMm = State.unit==='mm';
+      const dispW = isMm ? pxToMm(State.docW, State.dpi) : State.docW;
+      const dispH = isMm ? pxToMm(State.docH, State.dpi) : State.docH;
+      html=`<div class="sp-title">캔버스 사이즈</div>
+        <div class="sp-sub">단위</div>
+        <div class="row2" style="margin-bottom:10px">
+          <button class="btn-ghost ${!isMm?'unit-on':''}" id="unitPx" style="margin:0">px (화면)</button>
+          <button class="btn-ghost ${isMm?'unit-on':''}" id="unitMm" style="margin:0">mm (인쇄)</button>
+        </div>
+        <div class="row2">
+          <div class="field"><label>너비(${State.unit})</label><input type="number" step="${isMm?'0.1':'1'}" id="inW" value="${dispW}"></div>
+          <div class="field"><label>높이(${State.unit})</label><input type="number" step="${isMm?'0.1':'1'}" id="inH" value="${dispH}"></div>
+        </div>
+        <div class="field"><label>해상도(DPI) — 인쇄 품질</label>
+          <select id="inDPI">
+            <option value="72" ${State.dpi==72?'selected':''}>72 DPI (웹용)</option>
+            <option value="150" ${State.dpi==150?'selected':''}>150 DPI (일반 인쇄)</option>
+            <option value="300" ${State.dpi==300?'selected':''}>300 DPI (고품질 인쇄)</option>
+          </select>
+        </div>
+        <div style="font-size:11px;color:var(--txt-dim);margin:-4px 0 10px">현재: ${State.docW}×${State.docH}px · ${pxToMm(State.docW,State.dpi)}×${pxToMm(State.docH,State.dpi)}mm</div>
+        <button class="btn-full" id="applySize">적용</button>
+
+        <div class="sp-sub">인쇄용 재단선</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:8px">
+          <input type="checkbox" id="cropChk" ${State.showCrop?'checked':''} style="width:16px;height:16px;accent-color:var(--accent)">
+          재단선 / 트림마크 표시
+        </label>
+        <div class="field" id="bleedField" style="${State.showCrop?'':'opacity:.4;pointer-events:none'}">
+          <label>재단 여백 (mm)</label>
+          <input type="number" id="bleedVal" value="${State.bleedMm}" step="0.5" min="0" max="20">
+        </div>
+
+        <div class="sp-sub">인쇄용지 규격 (mm)</div>
+        <div class="preset-grid">
+          ${PAPER_PRESETS.map((p,i)=>`<button class="preset" data-paper="${i}">
+            <div class="ic" style="aspect-ratio:${p.w}/${p.h}; width:auto; max-width:30px; max-height:34px;"></div>
+            <div class="nm">${p.nm}</div><div class="dim">${p.w}×${p.h}mm</div></button>`).join('')}
+        </div>
+
+        <div class="sp-sub">웹/SNS 규격 (px)</div>
+        <div class="preset-grid">
+          ${WEB_PRESETS.map((p,i)=>`<button class="preset" data-web="${i}">
+            <div class="ic" style="aspect-ratio:${p.w}/${p.h}; width:auto; max-width:34px; max-height:34px;"></div>
+            <div class="nm">${p.nm}</div><div class="dim">${p.dim}</div></button>`).join('')}
+        </div>`;
+      break;
+    case 'text':
+      html=`<div class="sp-title">텍스트 추가</div>
+        <p style="font-size:11px;color:var(--txt-dim);margin-bottom:10px;line-height:1.5">버튼을 누른 뒤 캔버스에서 원하는 위치를 클릭하면 그 자리에 텍스트가 생깁니다. 언제든 더블클릭으로 다시 편집할 수 있어요.</p>
+        <button class="font-item" id="addTitle" style="font-family:'Black Han Sans';font-size:24px">제목 추가<small>큰 제목 텍스트</small></button>
+        <button class="font-item" id="addSub" style="font-weight:700;font-size:18px">부제목 추가<small>중간 크기 텍스트</small></button>
+        <button class="font-item" id="addBody" style="font-size:15px">본문 추가<small>일반 본문 텍스트</small></button>`;
+      break;
+    case 'shape':
+      html=`<div class="sp-title">도형 (${countLib(SHAPES)}종)</div>
+        <div class="sp-sub">기본 도형</div>
+        <div class="shape-grid">
+          ${[['rect','◼'],['roundrect','▢'],['circle','●'],['ellipse','⬭'],['triangle','▲'],['line','—']]
+            .map(([t,s])=>`<button class="shape-btn" data-shape="${t}" style="font-size:22px">${s}</button>`).join('')}
+        </div>
+        ${Object.keys(SHAPES).map(cat=>`
+          <div class="sp-sub">${cat}</div>
+          <div class="shape-grid">
+            ${SHAPES[cat].map((sp,i)=>`<button class="shape-btn" data-cat="${cat}" data-i="${i}" title="${sp.n}">
+              ${svgIcon(sp)}</button>`).join('')}
+          </div>`).join('')}
+        <div class="sp-sub">색상</div>
+        <div class="field"><input type="color" id="shapeColor" value="#4c8dff" style="width:100%;height:40px;border:none;border-radius:6px;background:none;"></div>`;
+      break;
+    case 'icon':
+      html=`<div class="sp-title">장식 아이콘 (${countLib(ICONS)}종)</div>
+        <p style="font-size:11px;color:var(--txt-dim);margin-bottom:6px">클릭하면 캔버스에 추가됩니다. 선/색은 우측 속성에서 바꿀 수 있어요.</p>
+        ${Object.keys(ICONS).map(cat=>`
+          <div class="sp-sub">${cat}</div>
+          <div class="shape-grid">
+            ${ICONS[cat].map((sp,i)=>`<button class="shape-btn" data-icat="${cat}" data-i="${i}" title="${sp.n}">
+              ${svgIcon(sp,true)}</button>`).join('')}
+          </div>`).join('')}`;
+      break;
+    case 'draw':
+      html=`<div class="sp-title">선 그리기 / 펜</div>
+        <div class="sp-sub">선 도구 (캔버스에서 드래그)</div>
+        <div class="shape-grid" style="grid-template-columns:repeat(2,1fr)">
+          <button class="shape-btn" id="toolLine" title="직선" style="aspect-ratio:auto;padding:10px"><svg viewBox="0 0 60 24" width="48" height="20"><line x1="4" y1="12" x2="56" y2="12" stroke="currentColor" stroke-width="3"/></svg></button>
+          <button class="shape-btn" id="toolDashed" title="점선" style="aspect-ratio:auto;padding:10px"><svg viewBox="0 0 60 24" width="48" height="20"><line x1="4" y1="12" x2="56" y2="12" stroke="currentColor" stroke-width="3" stroke-dasharray="7 5"/></svg></button>
+          <button class="shape-btn" id="toolCurve" title="곡선" style="aspect-ratio:auto;padding:10px"><svg viewBox="0 0 60 24" width="48" height="20"><path d="M4 18 Q30 -2 56 18" fill="none" stroke="currentColor" stroke-width="3"/></svg></button>
+          <button class="shape-btn" id="toolWavy" title="꾸불선(펜)" style="aspect-ratio:auto;padding:10px"><svg viewBox="0 0 60 24" width="48" height="20"><path d="M4 12 Q12 2 20 12 T36 12 T52 12" fill="none" stroke="currentColor" stroke-width="3"/></svg></button>
+        </div>
+        <p style="font-size:11px;color:var(--txt-dim);margin:4px 0 0">직선·점선·곡선은 캔버스에서 드래그해 그립니다. 꾸불선은 자유 펜으로 그려져요.</p>
+
+        <div class="sp-sub">자유 펜</div>
+        <button class="btn-full" id="drawToggle">✏️ 펜 그리기 켜기</button>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin:10px 0 4px">
+          <input type="checkbox" id="brushDash" style="width:16px;height:16px;accent-color:var(--accent)"> 펜을 점선으로
+        </label>
+
+        <div class="sp-sub">색상</div>
+        <div class="field"><input type="color" id="brushColor" value="#222222" style="width:100%;height:40px;border:none;border-radius:6px;background:none;"></div>
+        <div class="sp-sub">굵기</div>
+        <div class="slider-row"><input type="range" id="brushWidth" min="1" max="60" value="5"><span id="brushWidthV">5</span></div>`;
+      break;
+    case 'emoji':
+      html=`<div class="sp-title">이모지</div>
+        <div class="emoji-cat" id="emojiCat">
+          ${Object.keys(EMOJI_SETS).map((k,i)=>`<button data-cat="${k}" class="${i===0?'active':''}">${EMOJI_SETS[k][0]}</button>`).join('')}
+        </div>
+        <div class="emoji-grid" id="emojiGrid"></div>`;
+      break;
+    case 'image':
+      html=`<div class="sp-title">이미지</div>
+        <p style="font-size:12px;color:var(--txt-dim);line-height:1.5;margin-bottom:14px">내 컴퓨터에서 이미지를 불러와 캔버스에 추가합니다. (JPG/PNG/GIF/SVG)</p>
+        <button class="btn-full" id="uploadImg">📁 이미지 업로드</button>
+        <p style="font-size:11px;color:var(--txt-dim);margin-top:12px;line-height:1.5">이미지를 선택하면 오른쪽에서 밝기·대비·채도·흑백 등 기본 보정을 할 수 있어요.</p>`;
+      break;
+    case 'frame':
+      html=`<div class="sp-title">이미지 프레임 (${FRAMES.length}종)</div>
+        <p style="font-size:11px;color:var(--txt-dim);margin-bottom:12px;line-height:1.5">① 원하는 모양을 눌러 캔버스에 놓습니다.<br>② 그 틀을 선택한 채 아래 "이미지 채우기"를 누르면 사진이 그 모양으로 잘려 들어갑니다.</p>
+        <button class="btn-full" id="fillFrameBtn" style="margin-bottom:12px">🖼 선택한 프레임에 이미지 채우기</button>
+        <div class="shape-grid">
+          ${FRAMES.map((fr,i)=>`<button class="shape-btn" data-frameidx="${i}" title="${fr.n}">
+            <svg viewBox="0 0 100 100" width="28" height="28"><path d="${fr.d}" fill="#cfd1da" stroke="#9aa0ad" stroke-width="2" stroke-linejoin="round"/></svg>
+          </button>`).join('')}
+        </div>`;
+      break;
+    case 'table':
+      html=`<div class="sp-title">표 삽입</div>
+        <div class="row2">
+          <div class="field"><label>행 (가로줄)</label><input type="number" id="tblRows" value="3" min="1" max="20"></div>
+          <div class="field"><label>열 (세로줄)</label><input type="number" id="tblCols" value="3" min="1" max="12"></div>
+        </div>
+        <button class="btn-full" id="addTableBtn">표 만들기</button>
+        <p style="font-size:11px;color:var(--txt-dim);margin-top:12px;line-height:1.5">표를 추가한 뒤, 셀을 더블클릭하면 내용을 입력할 수 있어요. 첫 줄은 제목 행으로 굵게 표시됩니다.</p>`;
+      break;
+    case 'font':
+      html=`<div class="sp-title">폰트 (저작권 프리 30종)</div>
+        <p style="font-size:11px;color:var(--txt-dim);margin-bottom:10px">텍스트를 선택한 뒤 폰트를 누르면 적용됩니다.</p>
+        <div class="sp-sub">한글 ${KOREAN_FONTS.length}종</div>
+        ${KOREAN_FONTS.map(f=>`<button class="font-item" data-font="${f.f}" style="font-family:'${f.f}'">${f.n}<small>${f.f} · ${f.w}</small></button>`).join('')}
+        <div class="sp-sub">영문 ${ENGLISH_FONTS.length}종</div>
+        ${ENGLISH_FONTS.map(f=>`<button class="font-item" data-font="${f.f}" style="font-family:'${f.f}'">${f.n}<small>${f.f} · ${f.w}</small></button>`).join('')}`;
+      break;
+    case 'layer':
+      html=`<div class="sp-title">레이어</div><div id="layerList"></div>`;
+      break;
+    case 'workspace':
+      html=`<div class="sp-title">내 보관함</div>
+        <p style="font-size:11px;color:var(--txt-dim);margin-bottom:12px">브라우저에 저장된 디자인입니다.</p>
+        <div id="wsList"></div>`;
+      break;
+  }
+  sp.innerHTML=html;
+  bindPanelEvents(name);
+  if(name==='emoji') renderEmojiGrid(Object.keys(EMOJI_SETS)[0]);
+  if(name==='layer') renderLayers();
+  if(name==='workspace') renderWorkspace();
+}
+
+function renderEmojiGrid(cat){
+  const grid=$('#emojiGrid'); if(!grid)return;
+  grid.innerHTML=EMOJI_SETS[cat].map(e=>`<button class="emoji-btn" data-emoji="${e}">${e}</button>`).join('');
+  grid.querySelectorAll('.emoji-btn').forEach(b=>b.onclick=()=>addEmoji(b.dataset.emoji));
+}
+
+/* ========================================================
+   레이어 패널
+   ======================================================== */
+function renderLayers(){
+  const list=$('#layerList'); if(!list)return;
+  const objs=State.canvas.getObjects().slice().reverse();
+  if(!objs.length){list.innerHTML='<div class="empty" style="margin-top:20px">개체가 없습니다</div>';return;}
+  const active=State.canvas.getActiveObject();
+  list.innerHTML='';
+  objs.forEach(o=>{
+    const div=document.createElement('div');
+    div.className='layer-item'+(o===active?' sel':'');
+    const icon={textbox:'T',text:'T','i-text':'T',image:'🖼',rect:'◼',circle:'●',ellipse:'⬭',triangle:'▲',polygon:'⬠',path:'✎',line:'—',group:'❏'}[o.type]||'◇';
+    const label=(o.text)?o.text.slice(0,14):(o.type);
+    div.innerHTML=`<span class="ic">${icon}</span><span class="nm">${label}</span><span class="vis">${o.visible===false?'🚫':'👁'}</span>`;
+    div.querySelector('.nm').onclick=()=>{State.canvas.setActiveObject(o);State.canvas.requestRenderAll();};
+    div.querySelector('.ic').onclick=()=>{State.canvas.setActiveObject(o);State.canvas.requestRenderAll();};
+    div.querySelector('.vis').onclick=(e)=>{e.stopPropagation();o.visible=!(o.visible!==false);State.canvas.requestRenderAll();renderLayers();};
+    list.appendChild(div);
+  });
+}
+
+/* ========================================================
+   우측 속성 패널 (선택된 개체에 따라)
+   ======================================================== */
+function onSelect(){ buildRightPanel(); showCtxBar(); if($('#sidepanel').querySelector('#layerList')) renderLayers(); }
+function onDeselect(){
+  const bg=rgbToHex(State.canvas.backgroundColor||'#ffffff');
+  $('#rightbar').innerHTML=`<div class="sp-title">캔버스</div>
+    <div class="field"><label>배경 색</label><input type="color" id="cvBg" value="${bg}" style="height:42px"></div>
+    <button class="btn-ghost" id="cvTransparent" style="margin-top:0">배경 투명하게</button>
+    <div class="empty" style="margin-top:30px">개체를 선택하면<br>속성이 여기에 표시됩니다</div>`;
+  $('#cvBg').oninput=e=>{State.canvas.backgroundColor=e.target.value;State.canvas.requestRenderAll();};
+  $('#cvBg').onchange=()=>pushUndo();
+  $('#cvTransparent').onclick=()=>{State.canvas.backgroundColor='';State.canvas.requestRenderAll();pushUndo();toast('배경을 투명하게 설정했습니다');};
+  hideCtxBar();
+  if($('#layerList'))renderLayers();
+}
+
+function buildRightPanel(){
+  const a=State.canvas.getActiveObject(); if(!a){onDeselect();return;}
+  const rb=$('#rightbar');
+  const isText=(a.type==='textbox'||a.type==='i-text'||a.type==='text');
+  const hasFill=('fill' in a)&&a.type!=='line';
+  const hasStroke=('stroke' in a);
+  let h=`<div class="sp-title">속성</div>`;
+
+  // 표 편집
+  if(a._table && a._tableModel){
+    const m=a._tableModel;
+    h+=`<div class="sp-sub">표 (${m.rows}행 × ${m.cols}열)</div>
+      <div class="sp-sub" style="margin-top:8px">색상</div>
+      <div class="row2">
+        <div class="field"><label>헤더 배경</label><input type="color" id="tbHF" value="${rgbToHex(m.headerFill)}" style="height:34px"></div>
+        <div class="field"><label>헤더 글자</label><input type="color" id="tbHT" value="${rgbToHex(m.headerText)}" style="height:34px"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>본문 배경</label><input type="color" id="tbBF" value="${rgbToHex(m.bodyFill)}" style="height:34px"></div>
+        <div class="field"><label>본문 글자</label><input type="color" id="tbBT" value="${rgbToHex(m.bodyText)}" style="height:34px"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>선 색</label><input type="color" id="tbLC" value="${rgbToHex(m.lineColor)}" style="height:34px"></div>
+        <div class="field"><label>선 두께</label><input type="number" id="tbLW" value="${m.lineWidth}" min="0" max="12"></div>
+      </div>
+      <div class="sp-sub">행 (가로줄)</div>
+      <div class="row2">
+        <button class="btn-ghost" id="tbAddRow" style="margin:0">＋ 행 추가</button>
+        <button class="btn-ghost" id="tbDelRow" style="margin:0">－ 행 삭제</button>
+      </div>
+      <div class="sp-sub">열 (세로칸)</div>
+      <div class="row2">
+        <button class="btn-ghost" id="tbAddCol" style="margin:0">＋ 열 추가</button>
+        <button class="btn-ghost" id="tbDelCol" style="margin:0">－ 열 삭제</button>
+      </div>
+      <p style="font-size:11px;color:var(--txt-dim);margin-top:8px;line-height:1.5">셀을 더블클릭하면 내용을 입력할 수 있어요.</p>`;
+    rb.innerHTML=h;
+    bindTableEvents(a);
+    return;   // 표는 전용 패널만 표시
+  }
+
+  // 이미지 편집 (필터)
+  if(a.type==='image'){
+    const fl=readImageFilters(a);
+    // 프레임에 채워진 이미지: 프레임 안에서 크기 조절 + 빼기
+    if(a._framed){
+      const z=a._zoom||1;
+      h+=`<div class="sp-sub">프레임 안 사진</div>
+        <div class="field"><label>사진 크기 (프레임 안)</label>
+          <div class="slider-row"><input type="range" id="frZoom" min="1" max="4" step="0.05" value="${z}"><span id="frZoomV">${Math.round(z*100)}%</span></div></div>
+        <button class="btn-ghost" id="frUnfill" style="margin:0 0 4px;color:var(--danger);border-color:var(--danger)">🗑 이미지 빼기</button>
+        <p style="font-size:11px;color:var(--txt-dim);margin:4px 0 4px;line-height:1.5">사진을 더블클릭하거나 우클릭해도 조절·빼기가 가능해요.</p>`;
+    }
+    h+=`<div class="sp-sub">이미지 보정</div>
+      <div class="field"><label>밝기</label><div class="slider-row"><input type="range" id="imBright" min="-0.5" max="0.5" step="0.02" value="${fl.brightness}"><span>${Math.round(fl.brightness*100)}</span></div></div>
+      <div class="field"><label>대비</label><div class="slider-row"><input type="range" id="imContrast" min="-0.5" max="0.5" step="0.02" value="${fl.contrast}"><span>${Math.round(fl.contrast*100)}</span></div></div>
+      <div class="field"><label>채도</label><div class="slider-row"><input type="range" id="imSat" min="-1" max="1" step="0.04" value="${fl.saturation}"><span>${Math.round(fl.saturation*100)}</span></div></div>
+      <div class="field"><label>흐림(블러)</label><div class="slider-row"><input type="range" id="imBlur" min="0" max="0.5" step="0.02" value="${fl.blur}"><span>${Math.round(fl.blur*100)}</span></div></div>
+      <div class="row3" style="margin-bottom:10px">
+        <button class="btn-ghost" id="imGray" style="margin:0;${fl.grayscale?'background:var(--accent);color:#fff':''}">흑백</button>
+        <button class="btn-ghost" id="imSepia" style="margin:0;${fl.sepia?'background:var(--accent);color:#fff':''}">세피아</button>
+        <button class="btn-ghost" id="imInvert" style="margin:0;${fl.invert?'background:var(--accent);color:#fff':''}">반전</button>
+      </div>
+      <button class="btn-ghost" id="imReset" style="margin:0 0 4px">보정 초기화</button>
+      <div class="sp-sub">자르기 / 교체</div>
+      <div class="row2">
+        <button class="btn-ghost" id="imReplace" style="margin:0">이미지 교체</button>
+        <button class="btn-ghost" id="imFlipH" style="margin:0">좌우 반전</button>
+      </div>`;
+  }
+
+  if(isText){
+    h+=`<div class="field"><label>글꼴</label>
+      <select id="pFont">${ALL_FONTS.map(f=>`<option value="${f.f}" ${a.fontFamily===f.f?'selected':''}>${f.n}</option>`).join('')}</select></div>
+      <div class="row2">
+        <div class="field"><label>크기</label><input type="number" id="pFontSize" value="${Math.round(a.fontSize)}"></div>
+        <div class="field"><label>글자색</label><input type="color" id="pTextColor" value="${rgbToHex(a.fill)}" style="height:38px"></div>
+      </div>
+      <div class="row3" style="margin-bottom:12px">
+        <button class="btn-ghost" id="pBold" style="margin:0;font-weight:700;${!fontHasBold(a.fontFamily)?'opacity:.35':((a.fontWeight==700||a.fontWeight==='bold')?'background:var(--accent);color:#fff;border-color:var(--accent)':'')}" title="${fontHasBold(a.fontFamily)?'굵게':'이 폰트는 굵기 조절 미지원'}">B</button>
+        <button class="btn-ghost" id="pItalic" style="margin:0;font-style:italic;${a.fontStyle==='italic'?'background:var(--accent);color:#fff;border-color:var(--accent)':''}">I</button>
+        <button class="btn-ghost" id="pUnderline" style="margin:0;text-decoration:underline;${a.underline?'background:var(--accent);color:#fff;border-color:var(--accent)':''}">U</button>
+      </div>
+      <div class="row3" style="margin-bottom:12px">
+        <button class="btn-ghost" id="pAlignL" style="margin:0">≡L</button>
+        <button class="btn-ghost" id="pAlignC" style="margin:0">≡C</button>
+        <button class="btn-ghost" id="pAlignR" style="margin:0">≡R</button>
+      </div>
+      <div class="field"><label>줄 간격</label><div class="slider-row"><input type="range" id="pLineH" min="0.6" max="3" step="0.05" value="${a.lineHeight||1.16}"><span>${(a.lineHeight||1.16).toFixed(2)}</span></div></div>
+      <div class="field"><label>자간</label><div class="slider-row"><input type="range" id="pCharSp" min="-200" max="800" step="10" value="${a.charSpacing||0}"><span>${a.charSpacing||0}</span></div></div>`;
+  }
+  if(hasFill && !isText){
+    h+=`<div class="field"><label>채우기 색</label><input type="color" id="pFill" value="${rgbToHex(a.fill)}" style="height:38px"></div>`;
+  }
+  // 모서리 둥글기 (사각형 전용 rx/ry)
+  if(a.type==='rect'){
+    const maxR=Math.round(Math.min(a.width,a.height)/2);
+    const curR=Math.round(a.rx||0);
+    h+=`<div class="field"><label>모서리 둥글기 (r)</label>
+      <div class="slider-row"><input type="range" id="pRadius" min="0" max="${maxR}" value="${Math.min(curR,maxR)}"><span id="pRadiusV">${curR}</span></div></div>`;
+  }
+  if(hasStroke){
+    h+=`<div class="field"><label>테두리 색</label><input type="color" id="pStroke" value="${rgbToHex(a.stroke)||'#000000'}" style="height:38px"></div>
+      <div class="field"><label>테두리 두께</label><div class="slider-row"><input type="range" id="pStrokeW" min="0" max="40" value="${a.strokeWidth||0}"><span>${a.strokeWidth||0}</span></div></div>`;
+  }
+  // 공통
+  const bw=Math.round(a.getScaledWidth()), bh=Math.round(a.getScaledHeight());
+  const isMm=State.unit==='mm';
+  const dw=isMm?pxToMm(bw,State.dpi):bw, dh=isMm?pxToMm(bh,State.dpi):bh;
+  h+=`<div class="sp-sub">크기 (${State.unit})</div>
+    <div class="row2">
+      <div class="field" style="margin-bottom:6px"><label>너비</label><input type="number" id="pW" value="${dw}" step="${isMm?'0.1':'1'}"></div>
+      <div class="field" style="margin-bottom:6px"><label>높이</label><input type="number" id="pH" value="${dh}" step="${isMm?'0.1':'1'}"></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--txt-dim);margin-bottom:8px;cursor:pointer">
+      <input type="checkbox" id="pLockRatio" checked style="accent-color:var(--accent)"> 비율 고정
+    </label>
+    <div class="sp-sub">공통</div>
+    <div class="field"><label>투명도</label><div class="slider-row"><input type="range" id="pOpacity" min="0" max="1" step="0.01" value="${a.opacity!=null?a.opacity:1}"><span>${Math.round((a.opacity!=null?a.opacity:1)*100)}%</span></div></div>
+    <div class="field"><label>회전</label><div class="slider-row"><input type="range" id="pAngle" min="0" max="360" value="${Math.round(a.angle||0)}"><span>${Math.round(a.angle||0)}°</span></div></div>
+    <div class="sp-sub">정렬</div>
+    <div class="row3" style="margin-bottom:6px">
+      <button class="btn-ghost" data-align="left" style="margin:0">⬅</button>
+      <button class="btn-ghost" data-align="centerX" style="margin:0">⬌</button>
+      <button class="btn-ghost" data-align="right" style="margin:0">➡</button>
+    </div>
+    <div class="row3" style="margin-bottom:12px">
+      <button class="btn-ghost" data-align="top" style="margin:0">⬆</button>
+      <button class="btn-ghost" data-align="centerY" style="margin:0">⬍</button>
+      <button class="btn-ghost" data-align="bottom" style="margin:0">⬇</button>
+    </div>
+    <div class="sp-sub">순서 / 동작</div>
+    <div class="row2">
+      <button class="btn-ghost" id="pFront" style="margin:0">맨 앞</button>
+      <button class="btn-ghost" id="pBack" style="margin:0">맨 뒤</button>
+    </div>
+    <div class="row2" style="margin-top:6px">
+      <button class="btn-ghost" id="pDup" style="margin:0">복제</button>
+      <button class="btn-ghost" id="pDel" style="margin:0;color:var(--danger);border-color:var(--danger)">삭제</button>
+    </div>`;
+  rb.innerHTML=h;
+  bindRightEvents(a, isText);
+}
+
+function rgbToHex(c){
+  if(!c) return '#000000';
+  if(typeof c==='string' && c[0]==='#') return c.length===4? '#'+c.slice(1).split('').map(x=>x+x).join('') : c;
+  const m=(''+c).match(/\d+/g); if(!m) return '#000000';
+  return '#'+m.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join('');
+}
+
+
+/* ========================================================
+   좌측 패널 이벤트 바인딩
+   ======================================================== */
+function bindPanelEvents(name){
+  if(name==='size'){
+    // 단위 토글
+    $('#unitPx').onclick=()=>{ State.unit='px'; renderPanel('size'); };
+    $('#unitMm').onclick=()=>{ State.unit='mm'; renderPanel('size'); };
+    // 적용 (입력값을 단위에 맞게 px로 환산)
+    $('#applySize').onclick=()=>{
+      let w=parseFloat($('#inW').value), h=parseFloat($('#inH').value);
+      const dpi=parseInt($('#inDPI').value);
+      if(State.unit==='mm'){ w=mmToPx(w,dpi); h=mmToPx(h,dpi); }
+      else { w=Math.round(w); h=Math.round(h); }
+      if(w>0&&h>0){ applyDocSize(w,h,dpi); renderPanel('size'); }
+    };
+    // 종이규격(mm) 프리셋
+    $$('.preset[data-paper]').forEach(b=>b.onclick=()=>{
+      const p=PAPER_PRESETS[+b.dataset.paper];
+      const dpi = State.dpi<150 ? 300 : State.dpi;   // 인쇄용은 최소 300 권장
+      applyDocSize(mmToPx(p.w,dpi), mmToPx(p.h,dpi), dpi);
+      renderPanel('size');
+    });
+    // 웹규격(px) 프리셋
+    $$('.preset[data-web]').forEach(b=>b.onclick=()=>{
+      const p=WEB_PRESETS[+b.dataset.web];
+      applyDocSize(p.w, p.h, 72);
+      renderPanel('size');
+    });
+    // 재단선 체크박스
+    $('#cropChk').onchange=e=>{
+      State.showCrop=e.target.checked;
+      $('#bleedField').style.opacity=State.showCrop?'1':'.4';
+      $('#bleedField').style.pointerEvents=State.showCrop?'auto':'none';
+      drawCropMarks();
+    };
+    $('#bleedVal').onchange=e=>{
+      State.bleedMm=Math.max(0, parseFloat(e.target.value)||0);
+      drawCropMarks();
+    };
+  }
+  if(name==='text'){
+    $('#addTitle').onclick=()=>startTextPlace('title');
+    $('#addSub').onclick=()=>startTextPlace('sub');
+    $('#addBody').onclick=()=>startTextPlace('body');
+  }
+  if(name==='shape'){
+    let col='#4c8dff';
+    const cp=$('#shapeColor'); if(cp) cp.oninput=e=>col=e.target.value;
+    // 기본 프리미티브
+    $$('.shape-btn[data-shape]').forEach(b=>b.onclick=()=>{
+      addShape(b.dataset.shape);
+      const a=State.canvas.getActiveObject();
+      if(a&&a.set){ if(b.dataset.shape==='line') a.set('stroke',col); else a.set('fill',col); }
+      State.canvas.requestRenderAll();
+    });
+    // path 도형
+    $$('.shape-btn[data-cat]').forEach(b=>b.onclick=()=>{
+      const spec=SHAPES[b.dataset.cat][+b.dataset.i];
+      addPathShape(spec,false);
+      const a=State.canvas.getActiveObject();
+      if(a&&a.set){ if(a.fill && a.fill!=='') a.set('fill',col); else a.set('stroke',col); }
+      State.canvas.requestRenderAll();
+    });
+  }
+  if(name==='icon'){
+    $$('.shape-btn[data-icat]').forEach(b=>b.onclick=()=>{
+      const spec=ICONS[b.dataset.icat][+b.dataset.i];
+      addPathShape(spec,true);
+    });
+  }
+  if(name==='draw'){
+    const getOpts=()=>({color:$('#brushColor').value, width:+$('#brushWidth').value, dash:$('#brushDash')&&$('#brushDash').checked});
+    const tog=$('#drawToggle');
+    // 선 도구들
+    $('#toolLine').onclick=()=>{ startLineMode('line', getOpts()); toast('직선: 캔버스에서 드래그하세요'); };
+    $('#toolDashed').onclick=()=>{ startLineMode('dashed', getOpts()); toast('점선: 캔버스에서 드래그하세요'); };
+    $('#toolCurve').onclick=()=>{ startLineMode('curve', getOpts()); toast('곡선: 캔버스에서 드래그하세요'); };
+    $('#toolWavy').onclick=()=>{ setDrawMode(true, getOpts()); tog.textContent='⏹ 펜 그리기 끄기'; tog.style.background='var(--danger)'; toast('펜: 자유롭게 그리세요'); };
+    // 자유 펜 토글
+    tog.onclick=()=>{
+      const on=!State.drawMode;
+      setDrawMode(on, getOpts());
+      tog.textContent= on?'⏹ 펜 그리기 끄기':'✏️ 펜 그리기 켜기';
+      tog.style.background = on?'var(--danger)':'var(--accent)';
+    };
+    $('#brushColor').oninput=e=>{if(State.canvas.freeDrawingBrush)State.canvas.freeDrawingBrush.color=e.target.value;};
+    $('#brushWidth').oninput=e=>{$('#brushWidthV').textContent=e.target.value;if(State.canvas.freeDrawingBrush)State.canvas.freeDrawingBrush.width=+e.target.value;};
+    $('#brushDash').onchange=e=>{
+      if(State.canvas.freeDrawingBrush){
+        const w=+$('#brushWidth').value;
+        State.canvas.freeDrawingBrush.strokeDashArray = e.target.checked? [w*2.5,w*2] : null;
+      }
+    };
+  }
+  if(name==='emoji'){
+    $$('#emojiCat button').forEach(b=>b.onclick=()=>{
+      $$('#emojiCat button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); renderEmojiGrid(b.dataset.cat);
+    });
+  }
+  if(name==='image'){
+    $('#uploadImg').onclick=()=>{ State._fillFrameTarget=null; $('#imgInput').click(); };
+  }
+  if(name==='frame'){
+    $$('.shape-btn[data-frameidx]').forEach(b=>b.onclick=()=>addFrame(+b.dataset.frameidx));
+    $('#fillFrameBtn').onclick=()=>{
+      const a=State.canvas.getActiveObject();
+      if(a && a._frame){
+        State._fillFrameTarget=a;     // 이 프레임에 채울 것
+        State._replaceImg=null;
+        $('#imgInput').click();
+      } else {
+        toast('먼저 채울 프레임을 선택하세요','err');
+      }
+    };
+  }
+  if(name==='table'){
+    $('#addTableBtn').onclick=()=>{
+      addTable(parseInt($('#tblRows').value), parseInt($('#tblCols').value));
+    };
+  }
+  if(name==='font'){
+    $$('.font-item[data-font]').forEach(b=>b.onclick=()=>{
+      const a=State.canvas.getActiveObject();
+      if(!a){ toast('먼저 텍스트를 선택하세요','err'); return; }
+      const isTxt=o=>o&&(o.type==='textbox'||o.type==='i-text'||o.type==='text');
+      let targets=[];
+      if(a.type==='activeSelection'||a.type==='group'){
+        targets=a.getObjects().filter(isTxt);  // 묶음 안의 텍스트들
+      } else if(isTxt(a)){
+        targets=[a];
+      }
+      if(!targets.length){ toast('텍스트 개체를 선택하세요','err'); return; }
+      let done=0;
+      targets.forEach(t=>applyFontTo(t, b.dataset.font, ()=>{
+        if(++done===targets.length){ pushUndo(); buildRightPanel(); }
+      }));
+      toast(`'${FONT_MAP[b.dataset.font]?FONT_MAP[b.dataset.font].n:b.dataset.font}' 적용`,'ok');
+    });
+  }
+}
+
+function applyDocSize(w,h,dpi){
+  State.docW=w; State.docH=h; State.dpi=dpi||State.dpi;
+  resizeCanvasToDoc();   // 내부에서 drawCropMarks 호출됨
+  zoomFit();
+  const mm = `${pxToMm(w,State.dpi)}×${pxToMm(h,State.dpi)}mm`;
+  toast(`${w}×${h}px · ${mm} · ${State.dpi}DPI`,'ok');
+}
+
+/* ========================================================
+   우측 속성 패널 이벤트
+   ======================================================== */
+function bindTableEvents(group){
+  const m=group._tableModel;
+  // rerenderTable은 그룹을 새 객체로 교체하므로, 색상은 onchange(놓을 때) 한 번만 적용
+  const onColor=(id,key)=>{ const el=$('#'+id); if(el) el.onchange=e=>{ m[key]=e.target.value; rerenderTable(group); }; };
+  onColor('tbHF','headerFill'); onColor('tbHT','headerText');
+  onColor('tbBF','bodyFill');   onColor('tbBT','bodyText');
+  onColor('tbLC','lineColor');
+  if($('#tbLW')) $('#tbLW').onchange=e=>{ m.lineWidth=Math.max(0,parseInt(e.target.value)||0); rerenderTable(group); };
+  if($('#tbAddRow')) $('#tbAddRow').onclick=()=>tableAddRow(group);
+  if($('#tbDelRow')) $('#tbDelRow').onclick=()=>tableDelRow(group);
+  if($('#tbAddCol')) $('#tbAddCol').onclick=()=>tableAddCol(group);
+  if($('#tbDelCol')) $('#tbDelCol').onclick=()=>tableDelCol(group);
+}
+
+function bindRightEvents(a, isText){
+  const c=State.canvas;
+  const upd=()=>{a.setCoords();c.requestRenderAll();};
+  const set=(k,v)=>{a.set(k,v);upd();};
+
+  // 이미지 필터
+  if(a.type==='image'){
+    // 프레임 안 사진: 크기 조절 / 빼기
+    if(a._framed){
+      if($('#frZoom')) $('#frZoom').oninput=e=>{
+        const z=parseFloat(e.target.value)||1;
+        setFrameImageZoom(a, z);
+        const v=$('#frZoomV'); if(v) v.textContent=Math.round(z*100)+'%';
+      };
+      if($('#frZoom')) $('#frZoom').onchange=()=>pushUndo();
+      if($('#frUnfill')) $('#frUnfill').onclick=()=>unfillFrame(a);
+    }
+    const collect=()=>({
+      brightness:parseFloat($('#imBright').value)||0,
+      contrast:parseFloat($('#imContrast').value)||0,
+      saturation:parseFloat($('#imSat').value)||0,
+      blur:parseFloat($('#imBlur').value)||0,
+      grayscale:a._grayscale, sepia:a._sepia, invert:a._invert,
+    });
+    const reapply=()=>{ applyImageFilters(a, collect()); };
+    const upSpan=e=>{ if(e.target.nextElementSibling) e.target.nextElementSibling.textContent=Math.round(e.target.value*100); };
+    if($('#imBright')) $('#imBright').oninput=e=>{upSpan(e);reapply();};
+    if($('#imContrast')) $('#imContrast').oninput=e=>{upSpan(e);reapply();};
+    if($('#imSat')) $('#imSat').oninput=e=>{upSpan(e);reapply();};
+    if($('#imBlur')) $('#imBlur').oninput=e=>{upSpan(e);reapply();};
+    if($('#imGray')) $('#imGray').onclick=()=>{a._grayscale=!a._grayscale;reapply();buildRightPanel();pushUndo();};
+    if($('#imSepia')) $('#imSepia').onclick=()=>{a._sepia=!a._sepia;reapply();buildRightPanel();pushUndo();};
+    if($('#imInvert')) $('#imInvert').onclick=()=>{a._invert=!a._invert;reapply();buildRightPanel();pushUndo();};
+    if($('#imReset')) $('#imReset').onclick=()=>{
+      a._grayscale=a._sepia=a._invert=false; a.filters=[]; a.applyFilters(); c.requestRenderAll();
+      buildRightPanel(); pushUndo(); toast('보정을 초기화했습니다');
+    };
+    if($('#imFlipH')) $('#imFlipH').onclick=()=>{a.set('flipX',!a.flipX);c.requestRenderAll();pushUndo();};
+    if($('#imReplace')) $('#imReplace').onclick=()=>{ State._replaceImg=a; State._fillFrameTarget=null; $('#imgInput').click(); };
+    // 슬라이더 놓을 때 undo
+    ['imBright','imContrast','imSat','imBlur'].forEach(id=>{ if($('#'+id)) $('#'+id).onchange=()=>pushUndo(); });
+  }
+
+  if(isText){
+    $('#pFont').onchange=e=>{ applyFontTo(a, e.target.value); };
+    $('#pFontSize').oninput=e=>set('fontSize',parseInt(e.target.value)||12);
+    $('#pTextColor').oninput=e=>set('fill',e.target.value);
+    $('#pBold').onclick=()=>{
+      if(!fontHasBold(a.fontFamily)){
+        toast('이 폰트는 굵기 조절을 지원하지 않아요 (단일 굵기 폰트)','err');
+        return;
+      }
+      const cur=(a.fontWeight==700||a.fontWeight==='bold');
+      set('fontWeight', cur?400:700); buildRightPanel();
+    };
+    $('#pItalic').onclick=()=>{set('fontStyle',a.fontStyle==='italic'?'normal':'italic'); buildRightPanel();};
+    $('#pUnderline').onclick=()=>{set('underline',!a.underline); buildRightPanel();};
+    $('#pAlignL').onclick=()=>set('textAlign','left');
+    $('#pAlignC').onclick=()=>set('textAlign','center');
+    $('#pAlignR').onclick=()=>set('textAlign','right');
+    $('#pLineH').oninput=e=>{set('lineHeight',parseFloat(e.target.value));e.target.nextElementSibling.textContent=(+e.target.value).toFixed(2);};
+    $('#pCharSp').oninput=e=>{set('charSpacing',parseInt(e.target.value));e.target.nextElementSibling.textContent=e.target.value;};
+  }
+  if($('#pFill')) $('#pFill').oninput=e=>set('fill',e.target.value);
+  if($('#pRadius')) {
+    $('#pRadius').oninput=e=>{
+      const r=parseInt(e.target.value)||0;
+      a.set({rx:r, ry:r}); a.set('dirty',true); a.setCoords(); c.requestRenderAll();
+      $('#pRadiusV').textContent=r;
+    };
+    $('#pRadius').onchange=()=>pushUndo();
+  }
+  if($('#pStroke')) $('#pStroke').oninput=e=>set('stroke',e.target.value);
+  if($('#pStrokeW')) $('#pStrokeW').oninput=e=>{set('strokeWidth',parseInt(e.target.value));e.target.nextElementSibling.textContent=e.target.value;};
+  $('#pOpacity').oninput=e=>{set('opacity',parseFloat(e.target.value));e.target.nextElementSibling.textContent=Math.round(e.target.value*100)+'%';};
+  $('#pAngle').oninput=e=>{set('angle',parseInt(e.target.value));e.target.nextElementSibling.textContent=e.target.value+'°';};
+
+  // 크기 치수 입력 (px/mm)
+  const toPx=v=>State.unit==='mm'?mmToPx(v,State.dpi):v;
+  const lockEl=$('#pLockRatio');
+  function applyW(){
+    let v=parseFloat($('#pW').value); if(!(v>0))return;
+    const targetPx=toPx(v);
+    const cur=a.getScaledWidth();
+    const ratio=targetPx/cur;
+    a.scaleX = a.scaleX*ratio;
+    if(lockEl&&lockEl.checked){ a.scaleY=a.scaleY*ratio; }
+    a.setCoords(); c.requestRenderAll(); syncSizeFields();
+  }
+  function applyH(){
+    let v=parseFloat($('#pH').value); if(!(v>0))return;
+    const targetPx=toPx(v);
+    const cur=a.getScaledHeight();
+    const ratio=targetPx/cur;
+    a.scaleY = a.scaleY*ratio;
+    if(lockEl&&lockEl.checked){ a.scaleX=a.scaleX*ratio; }
+    a.setCoords(); c.requestRenderAll(); syncSizeFields();
+  }
+  function syncSizeFields(){
+    const isMm=State.unit==='mm';
+    const w=a.getScaledWidth(), hh=a.getScaledHeight();
+    $('#pW').value = isMm?pxToMm(w,State.dpi):Math.round(w);
+    $('#pH').value = isMm?pxToMm(hh,State.dpi):Math.round(hh);
+  }
+  if($('#pW')) $('#pW').onchange=()=>{applyW();pushUndo();};
+  if($('#pH')) $('#pH').onchange=()=>{applyH();pushUndo();};
+  $$('#rightbar [data-align]').forEach(b=>b.onclick=()=>alignActive(b.dataset.align));
+  $('#pFront').onclick=bringFront;
+  $('#pBack').onclick=sendBottom;
+  $('#pDup').onclick=duplicateActive;
+  $('#pDel').onclick=()=>{deleteActive();onDeselect();};
+}
+
+/* ========================================================
+   컨텍스트 툴바 (선택 시 캔버스 상단)
+   ======================================================== */
+function showCtxBar(){
+  const bar=$('#ctxbar'); bar.classList.remove('hidden');
+  bar.innerHTML=`
+    <button class="cb-btn" id="cbAL" title="왼쪽 정렬">⬅</button>
+    <button class="cb-btn" id="cbAC" title="가로 중앙">⬌</button>
+    <button class="cb-btn" id="cbAR" title="오른쪽 정렬">➡</button>
+    <span class="tb-sep" style="height:18px"></span>
+    <button class="cb-btn" id="cbAT" title="위쪽 정렬">⬆</button>
+    <button class="cb-btn" id="cbAM" title="세로 중앙">⬍</button>
+    <button class="cb-btn" id="cbAB" title="아래쪽 정렬">⬇</button>
+    <span class="tb-sep" style="height:18px"></span>
+    <button class="cb-btn" id="cbDup" title="복제">⧉</button>
+    <button class="cb-btn" id="cbFront" title="맨 앞으로">앞</button>
+    <button class="cb-btn" id="cbBack" title="맨 뒤로">뒤</button>
+    <button class="cb-btn" id="cbGroup" title="그룹">❏</button>
+    <button class="cb-btn" id="cbUngroup" title="그룹 해제">⊟</button>
+    <button class="cb-btn" id="cbDel" title="삭제" style="color:var(--danger)">🗑</button>`;
+  $('#cbAL').onclick=()=>alignActive('left');
+  $('#cbAC').onclick=()=>alignActive('centerX');
+  $('#cbAR').onclick=()=>alignActive('right');
+  $('#cbAT').onclick=()=>alignActive('top');
+  $('#cbAM').onclick=()=>alignActive('centerY');
+  $('#cbAB').onclick=()=>alignActive('bottom');
+  $('#cbDup').onclick=duplicateActive;
+  $('#cbFront').onclick=bringFront;
+  $('#cbBack').onclick=sendBottom;
+  $('#cbGroup').onclick=groupActive;
+  $('#cbUngroup').onclick=ungroupActive;
+  $('#cbDel').onclick=()=>{deleteActive();};
+}
+function hideCtxBar(){$('#ctxbar').classList.add('hidden');}
+
+
+/* ========================================================
+   IndexedDB 보관함
+   ======================================================== */
+const DB_NAME='canvalite', STORE='designs';
+function openDB(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open(DB_NAME,1);
+    r.onupgradeneeded=e=>{const db=e.target.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE,{keyPath:'id'});};
+    r.onsuccess=e=>res(e.target.result);
+    r.onerror=e=>rej(e);
+  });
+}
+async function dbPut(rec){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(rec);tx.oncomplete=res;tx.onerror=rej;});}
+async function dbAll(){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const rq=tx.objectStore(STORE).getAll();rq.onsuccess=()=>res(rq.result);rq.onerror=rej;});}
+async function dbGet(id){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const rq=tx.objectStore(STORE).get(id);rq.onsuccess=()=>res(rq.result);rq.onerror=rej;});}
+async function dbDel(id){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(id);tx.oncomplete=res;tx.onerror=rej;});}
+
+function serializeDoc(){
+  snapshotCurrentPage();
+  return {
+    name: State.docName, dpi: State.dpi, unit: State.unit,
+    showCrop: State.showCrop, bleedMm: State.bleedMm,
+    pages: State.pages.map(p=>({json:p.json,w:p.w,h:p.h})),
+    activePage: State.activePage,
+  };
+}
+async function saveToWorkspace(){
+  const doc=serializeDoc();
+  const id = State._currentId || ('d_'+uid());
+  State._currentId=id;
+  await dbPut({id, name:doc.name, updated:Date.now(), thumb:State.canvas.toDataURL({format:'png',multiplier:0.25}), doc});
+  toast('보관함에 저장했습니다','ok');
+  if($('#wsList')) renderWorkspace();
+}
+async function renderWorkspace(){
+  const list=$('#wsList'); if(!list)return;
+  const all=(await dbAll()).sort((a,b)=>b.updated-a.updated);
+  if(!all.length){list.innerHTML='<div class="empty" style="margin-top:20px">저장된 디자인이 없습니다.<br>상단 [저장]을 눌러보세요</div>';return;}
+  list.innerHTML='';
+  all.forEach(rec=>{
+    const card=document.createElement('div'); card.className='ws-card';
+    card.innerHTML=`<img class="thumb" src="${rec.thumb||''}">
+      <div class="meta"><div class="nm">${rec.name||'무제'}</div><div class="dt">${new Date(rec.updated).toLocaleString('ko-KR')}</div></div>
+      <button class="del" title="삭제">×</button>`;
+    card.querySelector('.thumb').onclick=()=>loadWorkspaceDoc(rec.id);
+    card.querySelector('.meta').onclick=()=>loadWorkspaceDoc(rec.id);
+    card.querySelector('.del').onclick=async(e)=>{e.stopPropagation();await dbDel(rec.id);renderWorkspace();toast('삭제했습니다');};
+    list.appendChild(card);
+  });
+}
+async function loadWorkspaceDoc(id){
+  const rec=await dbGet(id); if(!rec)return;
+  applyDoc(rec.doc); State._currentId=id;
+  toast('불러왔습니다','ok');
+}
+function applyDoc(doc){
+  openDocAsTab({
+    name: doc.name||'제목 없는 디자인',
+    dpi: doc.dpi||72,
+    unit: doc.unit||'px',
+    showCrop: !!doc.showCrop,
+    bleedMm: (doc.bleedMm!=null)?doc.bleedMm:3,
+    docW: (doc.pages&&doc.pages[0]&&doc.pages[0].w)||1080,
+    docH: (doc.pages&&doc.pages[0]&&doc.pages[0].h)||1080,
+    pages: (doc.pages&&doc.pages.length)? doc.pages.map(p=>({json:p.json,w:p.w,h:p.h,thumb:null}))
+            : [{json:{version:'5.3.0',objects:[],background:'#fff'},w:1080,h:1080,thumb:null}],
+    activePage: doc.activePage||0,
+    _currentId: doc._id||null,
+  });
+}
+
+/* ========================================================
+   프로젝트 파일(.json) 내보내기 / 불러오기
+   ======================================================== */
+function exportProjectFile(){
+  const doc=serializeDoc();
+  const blob=new Blob([JSON.stringify(doc)],{type:'application/json'});
+  downloadBlob(blob, (State.docName||'design')+'.json');
+  toast('프로젝트 파일을 저장했습니다','ok');
+}
+function importProjectFile(file){
+  const r=new FileReader();
+  r.onload=e=>{
+    try{ applyDoc(JSON.parse(e.target.result)); State._currentId=null; toast('프로젝트를 불러왔습니다','ok'); }
+    catch(err){ toast('파일을 읽을 수 없습니다','err'); }
+  };
+  r.readAsText(file);
+}
+
+/* ========================================================
+   내보내기 — PNG / PDF / PPT / GIF
+   배율 = 목표DPI / 72  (300DPI 인쇄 대응)
+   ======================================================== */
+function exportScale(){ return Math.max(1, State.dpi/72); }
+
+function renderPageToDataURL(pageIdx, scale){
+  // 임시 캔버스에 해당 페이지를 그려 dataURL 반환 (Promise)
+  return new Promise(res=>{
+    const p=State.pages[pageIdx];
+    const tmp=new fabric.StaticCanvas(null,{width:p.w,height:p.h});
+    tmp.loadFromJSON(p.json,()=>{
+      // 재단선이 켜져 있으면 내보내기 결과에도 포함
+      if(State.showCrop){
+        const grp=buildCropGroup(p.w,p.h);
+        if(grp) tmp.add(grp);
+      }
+      tmp.renderAll();
+      const url=tmp.toDataURL({format:'png',multiplier:scale});
+      tmp.dispose(); res(url);
+    });
+  });
+}
+/* 재단선 그룹 생성 (화면 overlay와 내보내기 공용) */
+function buildCropGroup(W,H){
+  const bleed=mmToPx(State.bleedMm,State.dpi);
+  const markLen=mmToPx(4,State.dpi);
+  const lw=Math.max(1,Math.round(State.dpi/150));
+  const parts=[new fabric.Rect({left:bleed,top:bleed,width:W-bleed*2,height:H-bleed*2,
+    fill:'',stroke:'#ff2d55',strokeWidth:lw,strokeDashArray:[markLen/2,markLen/3],selectable:false,evented:false})];
+  const corners=[
+    [bleed,0,bleed,markLen],[0,bleed,markLen,bleed],
+    [W-bleed,0,W-bleed,markLen],[W,bleed,W-markLen,bleed],
+    [bleed,H,bleed,H-markLen],[0,H-bleed,markLen,H-bleed],
+    [W-bleed,H,W-bleed,H-markLen],[W,H-bleed,W-markLen,H-bleed],
+  ];
+  corners.forEach(([x1,y1,x2,y2])=>parts.push(new fabric.Line([x1,y1,x2,y2],{stroke:'#000',strokeWidth:lw,selectable:false,evented:false})));
+  return new fabric.Group(parts,{selectable:false,evented:false});
+}
+
+async function exportPNG(){
+  snapshotCurrentPage();
+  const scale=exportScale();
+  for(let i=0;i<State.pages.length;i++){
+    const url=await renderPageToDataURL(i,scale);
+    const a=document.createElement('a');
+    a.href=url; a.download=`${State.docName}${State.pages.length>1?'_'+(i+1):''}.png`; a.click();
+    await new Promise(r=>setTimeout(r,150));
+  }
+  toast(`PNG ${State.pages.length}장 저장 (${State.dpi}DPI)`,'ok');
+}
+
+async function exportPDF(){
+  snapshotCurrentPage();
+  const scale=exportScale();
+  const {jsPDF}=window.jspdf;
+  let pdf=null;
+  for(let i=0;i<State.pages.length;i++){
+    const p=State.pages[i];
+    const url=await renderPageToDataURL(i,scale);
+    const orient=p.w>=p.h?'l':'p';
+    if(i===0) pdf=new jsPDF({orientation:orient,unit:'px',format:[p.w,p.h]});
+    else pdf.addPage([p.w,p.h],orient);
+    pdf.addImage(url,'PNG',0,0,p.w,p.h);
+  }
+  pdf.save(`${State.docName}.pdf`);
+  toast(`PDF 저장 완료 (${State.dpi}DPI 자산)`,'ok');
+}
+
+async function exportPPT(){
+  snapshotCurrentPage();
+  const scale=exportScale();
+  const pptx=new PptxGenJS();
+  // 첫 페이지 비율로 슬라이드 크기 설정 (인치, 96px=1in 기준)
+  const p0=State.pages[0];
+  const wIn=p0.w/96, hIn=p0.h/96;
+  pptx.defineLayout({name:'custom',width:wIn,height:hIn});
+  pptx.layout='custom';
+  for(let i=0;i<State.pages.length;i++){
+    const url=await renderPageToDataURL(i,scale);
+    const slide=pptx.addSlide();
+    slide.addImage({data:url, x:0,y:0,w:wIn,h:hIn});
+  }
+  await pptx.writeFile({fileName:`${State.docName}.pptx`});
+  toast('PPTX 저장 완료','ok');
+}
+
+async function exportGIF(){
+  if(State.pages.length<2){toast('GIF는 2페이지 이상일 때 만들 수 있어요','err');return;}
+  snapshotCurrentPage();
+  toast('GIF 생성 중...');
+  const p0=State.pages[0];
+  const gif=new GIF({workers:2,quality:10,width:p0.w,height:p0.h,
+    workerScript:'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'});
+  for(let i=0;i<State.pages.length;i++){
+    const url=await renderPageToDataURL(i,1);
+    const img=await loadImg(url);
+    const cv=document.createElement('canvas'); cv.width=p0.w; cv.height=p0.h;
+    const ctx=cv.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,p0.w,p0.h);
+    ctx.drawImage(img,0,0,p0.w,p0.h);
+    gif.addFrame(cv,{delay:1000});
+  }
+  gif.on('finished',blob=>{downloadBlob(blob,`${State.docName}.gif`);toast('GIF 저장 완료','ok');});
+  gif.render();
+}
+function loadImg(src){return new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.src=src;});}
+function downloadBlob(blob,name){const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
+
+/* ========================================================
+   내보내기 모달
+   ======================================================== */
+function openExportModal(){
+  showModal(`
+    <h2>다운로드</h2>
+    <p>현재 DPI: <b>${State.dpi}</b> · 페이지: <b>${State.pages.length}개</b><br>
+       PNG/PDF는 설정된 DPI 배율(${exportScale().toFixed(1)}x)로 고해상도 저장됩니다.</p>
+    <div class="row2" style="gap:10px">
+      <button class="btn-go" id="exPNG">🖼 PNG</button>
+      <button class="btn-go" id="exPDF">📄 PDF</button>
+    </div>
+    <div class="row2" style="gap:10px;margin-top:10px">
+      <button class="btn-go" id="exPPT">📊 PPTX</button>
+      <button class="btn-go" id="exGIF">🎞 GIF</button>
+    </div>
+    <div class="acts"><button class="btn-cancel" id="exClose">닫기</button></div>
+  `);
+  $('#exPNG').onclick=()=>{closeModal();exportPNG();};
+  $('#exPDF').onclick=()=>{closeModal();exportPDF();};
+  $('#exPPT').onclick=()=>{closeModal();exportPPT();};
+  $('#exGIF').onclick=()=>{closeModal();exportGIF();};
+  $('#exClose').onclick=closeModal;
+}
+
+/* ========================================================
+   새 캔버스 모달
+   ======================================================== */
+function openNewModal(){
+  showModal(`
+    <h2>새 캔버스 만들기</h2>
+    <p>인쇄용 종이규격을 고르거나, 크기를 직접 입력하세요.</p>
+    <div class="row2">
+      <button class="btn-ghost" id="nuPx" style="margin:0">px 입력</button>
+      <button class="btn-ghost" id="nuMm" style="margin:0">mm 입력</button>
+    </div>
+    <div class="row2" style="margin-top:10px">
+      <div class="field"><label>너비 <span id="nUnitL">px</span></label><input type="number" id="nW" value="1080"></div>
+      <div class="field"><label>높이 <span id="nUnitL2">px</span></label><input type="number" id="nH" value="1080"></div>
+    </div>
+    <div class="field"><label>해상도</label><select id="nDPI">
+      <option value="72">72 DPI (웹)</option><option value="150">150 DPI</option><option value="300" selected>300 DPI (인쇄)</option>
+    </select></div>
+    <div style="font-size:12px;color:var(--txt-dim);margin-bottom:6px">인쇄용지 (mm)</div>
+    <div class="preset-grid">
+      ${PAPER_PRESETS.slice(0,8).map((p,i)=>`<button class="preset" data-np="${i}"><div class="nm">${p.nm}</div><div class="dim">${p.w}×${p.h}mm</div></button>`).join('')}
+    </div>
+    <div class="acts"><button class="btn-cancel" id="nCancel">취소</button><button class="btn-go" id="nGo">만들기</button></div>
+  `);
+  let nUnit='px';
+  const refreshUnit=()=>{ $('#nUnitL').textContent=nUnit; $('#nUnitL2').textContent=nUnit; };
+  $('#nuPx').onclick=()=>{nUnit='px';refreshUnit();};
+  $('#nuMm').onclick=()=>{nUnit='mm';refreshUnit();};
+  $$('[data-np]').forEach(b=>b.onclick=()=>{
+    const p=PAPER_PRESETS[+b.dataset.np];
+    nUnit='mm'; refreshUnit();
+    $('#nW').value=p.w; $('#nH').value=p.h; $('#nDPI').value='300';
+  });
+  $('#nCancel').onclick=closeModal;
+  $('#nGo').onclick=()=>{
+    let w=parseFloat($('#nW').value), h=parseFloat($('#nH').value), dpi=+$('#nDPI').value;
+    if(nUnit==='mm'){ w=mmToPx(w,dpi); h=mmToPx(h,dpi); } else { w=Math.round(w); h=Math.round(h); }
+    closeModal(); newDocument(w,h,dpi);
+  };
+}
+function newDocument(w,h,dpi){
+  openDocAsTab({
+    name:'제목 없는 디자인', docW:w, docH:h, dpi:dpi, showCrop:false,
+    pages:[{json:{version:'5.3.0',objects:[],background:'#ffffff'},w,h,thumb:null}],
+  });
+  toast('새 편집창을 열었습니다','ok');
+}
+
+/* ========================================================
+   모달 유틸
+   ======================================================== */
+function showModal(html){$('#modalBox').innerHTML=html;$('#modalBg').classList.remove('hidden');}
+function closeModal(){$('#modalBg').classList.add('hidden');}
+
+/* ========================================================
+   상단바 + 전역 이벤트 + 단축키
+   ======================================================== */
+function bindGlobal(){
+  // 좌측 아이콘 전환
+  $$('.lb-item').forEach(b=>b.onclick=()=>{
+    setDrawMode(false); stopLineMode(); cancelPlace();   // 그리기/배치 모드 정리
+    $$('.lb-item').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); renderPanel(b.dataset.panel);
+  });
+  // 상단
+  $('#btnNew').onclick=openNewModal;
+  $('#btnSave').onclick=saveToWorkspace;
+  $('#btnUndo').onclick=doUndo;
+  $('#btnRedo').onclick=doRedo;
+  $('#btnExport').onclick=openExportModal;
+  $('#btnProjSave').onclick=exportProjectFile;
+  $('#btnProjLoad').onclick=()=>$('#projInput').click();
+  $('#docName').oninput=e=>{ State.docName=e.target.value||'제목 없는 디자인'; renderDocTabs(); };
+  $('#docName').onchange=e=>{ State.docName=e.target.value||'제목 없는 디자인'; renderDocTabs(); };
+  // 줌
+  $('#zoomIn').onclick=()=>setZoom(State.zoom*1.2);
+  $('#zoomOut').onclick=()=>setZoom(State.zoom/1.2);
+  $('#zoomFit').onclick=zoomFit;
+  $('#snapToggle').onclick=()=>{
+    Snap.enabled=!Snap.enabled;
+    const btn=$('#snapToggle');
+    btn.style.color=Snap.enabled?'var(--accent)':'var(--txt-dim)';
+    btn.title=Snap.enabled?'스냅/가이드선 켜짐':'스냅/가이드선 꺼짐';
+    if(!Snap.enabled) clearGuides();
+    toast(Snap.enabled?'스냅 켜짐':'스냅 꺼짐');
+  };
+  $('#addPage').onclick=addPage;
+  // 파일 입력
+  $('#imgInput').onchange=e=>{
+    const file=e.target.files[0];
+    if(file){
+      if(State._replaceImg){
+        const target=State._replaceImg; State._replaceImg=null;
+        const reader=new FileReader();
+        reader.onload=ev=>fabric.Image.fromURL(ev.target.result,nimg=>{
+          nimg.set({left:target.left,top:target.top,originX:target.originX,originY:target.originY,
+            scaleX:target.scaleX,scaleY:target.scaleY,angle:target.angle,id:uid(),
+            clipPath:target.clipPath,_frameD:target._frameD,_framed:target._framed});
+          State.canvas.remove(target); State.canvas.add(nimg); State.canvas.setActiveObject(nimg);
+          State.canvas.requestRenderAll(); pushUndo(); toast('이미지를 교체했습니다','ok');
+        },{crossOrigin:'anonymous'});
+        reader.readAsDataURL(file);
+      } else if(State._fillFrameTarget){
+        fillFrameWithImage(State._fillFrameTarget, file);
+        State._fillFrameTarget=null;
+      } else {
+        addImageFromFile(file);
+      }
+    }
+    e.target.value='';
+  };
+  $('#projInput').onchange=e=>{if(e.target.files[0])importProjectFile(e.target.files[0]);e.target.value='';};
+  // 모달 바깥 클릭
+  $('#modalBg').onclick=e=>{if(e.target.id==='modalBg')closeModal();};
+  // Ctrl+휠 줌
+  $('#stage').addEventListener('wheel',e=>{
+    if(e.ctrlKey||e.metaKey){e.preventDefault();setZoom(State.zoom*(e.deltaY<0?1.1:0.9));}
+  },{passive:false});
+  // 단축키
+  document.addEventListener('keydown',e=>{
+    const editing=State.canvas&&State.canvas.getActiveObject()&&State.canvas.getActiveObject().isEditing;
+    if(editing) return;
+    const ctrl=e.ctrlKey||e.metaKey;
+    if(ctrl&&e.key==='z'){e.preventDefault();doUndo();}
+    else if(ctrl&&(e.key==='y'||(e.shiftKey&&e.key==='z'))){e.preventDefault();doRedo();}
+    else if(ctrl&&e.key==='s'){e.preventDefault();saveToWorkspace();}
+    else if(ctrl&&e.key==='d'){e.preventDefault();duplicateActive();}
+    else if((e.key==='Delete'||e.key==='Backspace')){
+      if(State.canvas.getActiveObject()){e.preventDefault();deleteActive();}
+    }
+    else if(e.key==='Escape'){State.canvas.discardActiveObject();State.canvas.requestRenderAll();}
+  });
+}
+
+/* ========================================================
+   초기화
+   ======================================================== */
+window.addEventListener('load',()=>{
+  initCanvas();
+  setupSnap();
+  bindGlobal();
+  renderPanel('size');
+  // 첫 문서를 탭으로 생성
+  openDocAsTab({name:'제목 없는 디자인', docW:State.docW, docH:State.docH,
+    pages:[{json:{version:'5.3.0',objects:[],background:'#ffffff'},w:State.docW,h:State.docH,thumb:null}]});
+  // 폰트 로드 후 렌더 갱신 + 전체 폰트 미리 로드
+  preloadAllFonts();
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(()=>State.canvas.requestRenderAll());}
+  setTimeout(()=>{zoomFit();renderPageBar();pushUndo();onDeselect();},300);
+});
+
+
+
+</script>
+</body>
+</html>
